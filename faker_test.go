@@ -58,8 +58,8 @@ func TestMake(t *testing.T) {
 		t.Parallel()
 
 		v := Make[[]int]()
-		if len(v) < DefaultOption().MinLen || len(v) > DefaultOption().MaxLen {
-			t.Fatalf("expected slice length in range [%d, %d], got %d", DefaultOption().MinLen, DefaultOption().MaxLen, len(v))
+		if len(v) < DefaultOption().MinContainersLen || len(v) > DefaultOption().MaxContainersLen {
+			t.Fatalf("expected slice length in range [%d, %d], got %d", DefaultOption().MinContainersLen, DefaultOption().MaxContainersLen, len(v))
 		}
 		for _, v := range v {
 			if v == 0 {
@@ -72,8 +72,8 @@ func TestMake(t *testing.T) {
 		t.Parallel()
 
 		v := Make[map[string]string]()
-		if len(v) < DefaultOption().MinLen || len(v) > DefaultOption().MaxLen {
-			t.Fatalf("expected map length in range [%d, %d], got %d", DefaultOption().MinLen, DefaultOption().MaxLen, len(v))
+		if len(v) < DefaultOption().MinContainersLen || len(v) > DefaultOption().MaxContainersLen {
+			t.Fatalf("expected map length in range [%d, %d], got %d", DefaultOption().MinContainersLen, DefaultOption().MaxContainersLen, len(v))
 		}
 		for k, v := range v {
 			if k == "" {
@@ -165,6 +165,8 @@ func TestMake(t *testing.T) {
 func TestMakeAndOverride(t *testing.T) {
 	t.Parallel()
 
+	const customName = "custom name"
+
 	type User struct {
 		ID   int
 		Name string
@@ -173,13 +175,97 @@ func TestMakeAndOverride(t *testing.T) {
 	defaultUser := User{}
 
 	u := MakeAndOverride(func(v *User) {
-		v.Name = "custom name"
+		v.Name = customName
 	})
 
 	if u == defaultUser {
 		t.Fatal("expected not default value")
 	}
-	if u.Name != "custom name" {
-		t.Fatalf("expected Name = %v, actual = %v", "custom name", u.Name)
+	if u.Name != customName {
+		t.Fatalf("expected Name = %v, actual = %v", customName, u.Name)
 	}
+}
+
+func TestMakeWithOption(t *testing.T) {
+	t.Parallel()
+
+	type User struct {
+		Numbers []int
+		Name    string
+		Ch      chan int
+		Skip1   string
+		Skip2   int
+	}
+
+	t.Run("close channels", func(t *testing.T) {
+		t.Parallel()
+
+		opt := DefaultOption()
+		opt.CloseChannels = true
+
+		u := MakeWithOption[User](opt)
+
+		for range u.Ch {
+		}
+
+		if _, ok := <-u.Ch; ok {
+			t.Fatal("expected channel to be closed")
+		}
+	})
+
+	t.Run("allowed runes", func(t *testing.T) {
+		t.Parallel()
+
+		opt := DefaultOption()
+		opt.AllowedRunes = []rune("123abc")
+
+		u := MakeWithOption[User](opt)
+
+		for _, v := range u.Name {
+			if !slices.Contains(opt.AllowedRunes, v) {
+				t.Fatalf("symbol %d not exists in allowed runes '%v'", v, string(opt.AllowedRunes))
+			}
+		}
+	})
+
+	t.Run("str len", func(t *testing.T) {
+		t.Parallel()
+
+		opt := DefaultOption()
+		opt.StrLen = 3
+
+		u := MakeWithOption[User](opt)
+
+		if utf8.RuneCountInString(u.Name) != opt.StrLen {
+			t.Fatalf("expected string length %v, got %v", opt.StrLen, utf8.RuneCountInString(u.Name))
+		}
+	})
+
+	t.Run("containers length", func(t *testing.T) {
+		t.Parallel()
+
+		opt := DefaultOption()
+		opt.MinContainersLen = 10
+		opt.MaxContainersLen = 15
+
+		u := MakeWithOption[User](opt)
+		if len(u.Numbers) < opt.MinContainersLen || len(u.Numbers) > opt.MaxContainersLen {
+			t.Fatalf("expected slice length in range [%d, %d], got %d", DefaultOption().MinContainersLen, DefaultOption().MaxContainersLen, len(u.Numbers))
+		}
+	})
+
+	t.Run("skip fields", func(t *testing.T) {
+		t.Parallel()
+
+		opt := DefaultOption()
+		opt.IgnoreFields = []string{"Skip1", "Skip2"}
+
+		u := MakeWithOption[User](opt)
+		if u.Skip1 != "" {
+			t.Fatalf("expected default string value, got %v", u.Skip1)
+		}
+		if u.Skip2 != 0 {
+			t.Fatalf("expected default int value, got %v", u.Skip2)
+		}
+	})
 }

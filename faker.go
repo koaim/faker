@@ -28,8 +28,8 @@ func Make[T any](opts ...OptionF) T {
 // then applies the override f to it. The override receives a pointer to
 // the generated value and can mutate any part of it before it is
 // returned.
-func MakeAndOverride[T any](f func(v *T)) T {
-	v := Make[T]()
+func MakeAndOverride[T any](f func(v *T), opts ...OptionF) T {
+	v := Make[T](opts...)
 	f(&v)
 
 	return v
@@ -149,6 +149,10 @@ func fillPointer(rv reflect.Value, opt Option) {
 }
 
 func fillString(rv reflect.Value, opt Option) {
+	if len(opt.AllowedRunes) == 0 {
+		return
+	}
+
 	r := make([]rune, opt.StrLen)
 
 	for i := range len(r) {
@@ -160,8 +164,8 @@ func fillString(rv reflect.Value, opt Option) {
 }
 
 func randLen(opt Option) int {
-	if opt.MaxLen < opt.MinLen {
-		return opt.MinLen
+	if opt.MaxContainersLen < opt.MinContainersLen {
+		return opt.MinContainersLen
 	}
-	return opt.MinLen + rand.IntN(opt.MaxLen-opt.MinLen+1)
+	return opt.MinContainersLen + rand.IntN(opt.MaxContainersLen-opt.MinContainersLen+1)
 }

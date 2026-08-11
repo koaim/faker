@@ -1,7 +1,7 @@
 # faker
 [![GoDoc](https://godoc.org/github.com/koaim/faker?status.svg)](https://godoc.org/github.com/koaim/faker) [![license](http://img.shields.io/badge/license-MIT-green.svg?style=flat)](https://raw.githubusercontent.com/koaim/faker/main/LICENSE)
 
-A lightweight random value generator for tests, written in Go.
+A lightweight random value generator **for tests**.
 
 ## Installation
 
@@ -11,12 +11,14 @@ go get github.com/koaim/faker
 
 ## Why?
 
-I was using [gofakeit](https://github.com/brianvoe/gofakeit) but only ever needed `gofakeit.Struct()` — filling a struct with random data for tests. Everything else was unused. So I wrote a small, focused library that does just that, without pulling in the rest of a big dependency.
+I wanted a simple way to populate Go structs with random data for tests. Libraries like [gofakeit](https://github.com/brianvoe/gofakeit) offer much more functionality than I needed, while I only used `gofakeit.Struct()`.
+
+This library focuses on that single use case: generating random values and populating structs, with a small API and no unnecessary dependencies.
 
 ## Features
 
 - Convenient API with generics support
-- Supports int/uint, float/complex, string, bool, struct, slice, array, map, chan and pointer types
+- Supports `int`, `uint`, `float`, `complex`, `string`, `bool`, `struct`, `slice`, `array`, `map`, `chan` and pointer types
 - Zero dependencies
 
 ## Usage
@@ -48,6 +50,16 @@ func main() {
 
 	// fill struct and ignore some fields
 	u = faker.Make[User](faker.WithIgnoreFields("Admin"))
+
+	// fill struct with custom options
+	u = faker.MakeWithOption[User](faker.Option{
+		MinContainersLen: 1,
+		MaxContainersLen: 5,
+		AllowedRunes:     []rune("123abc"),
+		StrLen:           6,
+		IgnoreFields: 	  []string{"Email"},
+		CloseChannels:    true,
+	})
 }
 ```
 
