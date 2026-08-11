@@ -18,7 +18,7 @@ This library focuses on that single use case: generating random values and popul
 ## Features
 
 - Convenient API with generics support
-- Supports `int`, `uint`, `float`, `complex`, `string`, `bool`, `struct`, `slice`, `array`, `map`, `chan` and pointer types
+- Supports `int`, `uint`, `float`, `complex`, `string`, `bool`, `struct`, `slice`, `array`, `map`, `chan`, `time.Time` and pointer types
 - Zero dependencies
 
 ## Usage

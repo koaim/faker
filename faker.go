@@ -8,13 +8,14 @@ import (
 	"math/rand/v2"
 	"reflect"
 	"slices"
+	"time"
 )
 
 // Make generates and returns a value of type T filled with fake data.
 //
 // It starts from the default options and applies the provided opts in
 // order. Supported types: int/uint, float/complex, string, bool, struct,
-// slice, array, map, chan, and pointer. Pointers are never nil. Struct
+// slice, array, map, chan, time.Time and pointer. Pointers are never nil. Struct
 // fields listed in IgnoreFields and unaddressable fields are skipped.
 func Make[T any](opts ...OptionF) T {
 	o := DefaultOption()
@@ -60,7 +61,11 @@ func fill(v any, opt Option) {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		rv.SetUint(rand.Uint64())
 	case reflect.Struct:
-		fillStruct(rv, opt)
+		if rv.Type() == reflect.TypeFor[time.Time]() {
+			fillTime(rv)
+		} else {
+			fillStruct(rv, opt)
+		}
 	case reflect.Bool:
 		rv.SetBool(true)
 	case reflect.Float64, reflect.Float32:
@@ -165,6 +170,14 @@ func fillString(rv reflect.Value, opt Option) {
 	}
 
 	rv.SetString(string(r))
+}
+
+func fillTime(rv reflect.Value) {
+	minUnix := time.Now().AddDate(-yearsForward, 0, 0).Unix()
+	maxUnix := time.Now().AddDate(yearsForward, 0, 0).Unix()
+	sec := minUnix + rand.Int64N(maxUnix-minUnix+1)
+
+	rv.Set(reflect.ValueOf(time.Unix(sec, rand.Int64N(1e9))))
 }
 
 func randLen(opt Option) int {

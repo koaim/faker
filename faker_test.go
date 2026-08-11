@@ -3,6 +3,7 @@ package faker
 import (
 	"slices"
 	"testing"
+	"time"
 	"unicode/utf8"
 )
 
@@ -24,6 +25,16 @@ func TestMake(t *testing.T) {
 		v := Make[uint]()
 		if v == 0 {
 			t.Fatal("expected non-zero uint")
+		}
+	})
+
+	t.Run("time", func(t *testing.T) {
+		t.Parallel()
+
+		v := Make[time.Time]()
+
+		if v.Equal(time.Time{}) {
+			t.Fatal("expected non-zero time.Time")
 		}
 	})
 
@@ -138,14 +149,16 @@ func TestMake(t *testing.T) {
 		t.Parallel()
 
 		type Order struct {
-			ID   int64
-			Name string
+			ID        int64
+			Name      string
+			DeletedAt *time.Time
 		}
 
 		type User struct {
-			ID    int
-			Name  string
-			Order *Order
+			ID        int
+			Name      string
+			Order     *Order
+			CreatedAt time.Time
 		}
 
 		defaultUser := User{}
