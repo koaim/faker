@@ -129,7 +129,6 @@ func TestMake(t *testing.T) {
 		t.Parallel()
 
 		v := Make[chan int]()
-
 		if len(v) == 0 {
 			t.Fatal("expected non-empty chan")
 		}

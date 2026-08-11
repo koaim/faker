@@ -33,10 +33,10 @@ import (
 )
 
 type User struct {
-	ID    int
-	Name  string
-	Email string
-	Admin bool
+	ID      int
+	Name    string
+	Email   string
+	IsAdmin bool
 }
 
 func main() {
@@ -49,7 +49,7 @@ func main() {
 	})
 
 	// fill struct and ignore some fields
-	u = faker.Make[User](faker.WithIgnoreFields("Admin"))
+	u = faker.Make[User](faker.WithIgnoreFields("IsAdmin", "Email"))
 
 	// fill struct with custom options
 	u = faker.MakeWithOption[User](faker.Option{

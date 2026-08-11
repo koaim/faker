@@ -1,3 +1,7 @@
+// Package faker generates fake data for arbitrary Go types.
+//
+// It fills structs, slices, maps, and primitive values with random
+// values using reflection. See the Make function for details.
 package faker
 
 import (
