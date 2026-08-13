@@ -5,6 +5,7 @@
 package faker
 
 import (
+	"math"
 	"math/rand/v2"
 	"reflect"
 	"slices"
@@ -53,13 +54,20 @@ func MakeWithOption[T any](opt Option) T {
 func fill(v any, opt Option) {
 	rv := reflect.ValueOf(v).Elem()
 
+	for _, f := range opt.CustomFakers {
+		if f.Type == rv.Type() {
+			rv.Set(reflect.ValueOf(f.F()))
+			return
+		}
+	}
+
 	switch rv.Kind() {
 	case reflect.String:
 		fillString(rv, opt)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		rv.SetInt(rand.Int64())
+		fillInt(rv)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		rv.SetUint(rand.Uint64())
+		fillUint(rv)
 	case reflect.Struct:
 		if rv.Type() == reflect.TypeFor[time.Time]() {
 			fillTime(rv)
@@ -82,6 +90,36 @@ func fill(v any, opt Option) {
 		fillChan(rv, opt)
 	case reflect.Pointer:
 		fillPointer(rv, opt)
+	}
+}
+
+func fillUint(rv reflect.Value) {
+	switch rv.Kind() {
+	case reflect.Uint8:
+		rv.SetUint(rand.Uint64N(math.MaxUint8))
+	case reflect.Uint16:
+		rv.SetUint(rand.Uint64N(math.MaxUint16))
+	case reflect.Uint32:
+		rv.SetUint(rand.Uint64N(math.MaxUint32))
+	case reflect.Uint64:
+		rv.SetUint(rand.Uint64())
+	case reflect.Uint, reflect.Uintptr:
+		rv.SetUint(uint64(rand.Uint()))
+	}
+}
+
+func fillInt(rv reflect.Value) {
+	switch rv.Kind() {
+	case reflect.Int8:
+		rv.SetInt(rand.Int64N(math.MaxInt8))
+	case reflect.Int16:
+		rv.SetInt(rand.Int64N(math.MaxInt16))
+	case reflect.Int32:
+		rv.SetInt(rand.Int64N(math.MaxInt32))
+	case reflect.Int64:
+		rv.SetInt(rand.Int64N(math.MaxInt64))
+	case reflect.Int:
+		rv.SetInt(rand.Int64N(math.MaxInt))
 	}
 }
 
@@ -158,10 +196,6 @@ func fillPointer(rv reflect.Value, opt Option) {
 }
 
 func fillString(rv reflect.Value, opt Option) {
-	if len(opt.AllowedRunes) == 0 {
-		return
-	}
-
 	r := make([]rune, opt.StrLen)
 
 	for i := range len(r) {
