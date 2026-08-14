@@ -1,6 +1,7 @@
 package faker
 
 import (
+	"context"
 	"slices"
 	"testing"
 	"time"
@@ -28,11 +29,33 @@ func TestMake(t *testing.T) {
 		}
 	})
 
+	t.Run("uintptr", func(t *testing.T) {
+		t.Parallel()
+
+		v := Make[uintptr]()
+		if v == 0 {
+			t.Fatal("expected non-zero uintptr")
+		}
+	})
+
 	t.Run("time", func(t *testing.T) {
 		t.Parallel()
 
 		v := Make[time.Time]()
 
+		if v.Equal(time.Time{}) {
+			t.Fatal("expected non-zero time.Time")
+		}
+	})
+
+	t.Run("pointer", func(t *testing.T) {
+		t.Parallel()
+
+		v := Make[*time.Time]()
+
+		if v == nil {
+			t.Fatal("expected non-nil value")
+		}
 		if v.Equal(time.Time{}) {
 			t.Fatal("expected non-zero time.Time")
 		}
@@ -124,18 +147,6 @@ func TestMake(t *testing.T) {
 		}
 	})
 
-	t.Run("pointer", func(t *testing.T) {
-		t.Parallel()
-
-		v := Make[*string]()
-		if v == nil {
-			t.Fatal("expected non-nil pointer")
-		}
-		if *v == "" {
-			t.Fatal("expected non-empty string")
-		}
-	})
-
 	t.Run("chan", func(t *testing.T) {
 		t.Parallel()
 
@@ -148,21 +159,22 @@ func TestMake(t *testing.T) {
 	t.Run("struct", func(t *testing.T) {
 		t.Parallel()
 
-		type Order struct {
+		type Order[T any] struct {
 			ID        int64
 			Name      string
 			DeletedAt *time.Time
+			Type      T
 		}
 
 		type User struct {
 			ID        int
 			Name      string
-			Order     *Order
+			Order     *Order[string]
 			CreatedAt time.Time
 		}
 
 		defaultUser := User{}
-		defaultOrder := Order{}
+		defaultOrder := Order[string]{}
 
 		u := Make[User]()
 		if u == defaultUser {
@@ -170,6 +182,70 @@ func TestMake(t *testing.T) {
 		}
 		if u.Order == nil || *u.Order == defaultOrder {
 			t.Fatal("expected non-nil and non-empty Order value")
+		}
+	})
+
+	t.Run("struct with not supported types", func(t *testing.T) {
+		t.Parallel()
+
+		type User struct {
+			Ctx context.Context
+			Any any
+			Err error
+			F   func()
+		}
+
+		u := Make[User]()
+
+		if u.Ctx != nil {
+			t.Fatalf("expected nil Ctx, got %v", u.Ctx)
+		}
+		if u.Any != nil {
+			t.Fatalf("expected nil Any, got %v", u.Any)
+		}
+		if u.Err != nil {
+			t.Fatalf("expected nil Err, got %v", u.Err)
+		}
+		if u.F != nil {
+			t.Fatalf("expected nil F")
+		}
+	})
+
+	t.Run("struct with custom fakers", func(t *testing.T) {
+		t.Parallel()
+
+		const (
+			strVal = "string"
+			intVal = 11
+		)
+
+		type User struct {
+			ID   int
+			Age  int
+			Name string
+			City string
+		}
+
+		u := Make[User](
+			WithCustomFaker(func() string {
+				return strVal
+			}),
+			WithCustomFaker(func() int {
+				return intVal
+			}),
+		)
+
+		if u.ID != intVal {
+			t.Fatalf("expected ID = %v, actual = %v", intVal, u.ID)
+		}
+		if u.Age != intVal {
+			t.Fatalf("expected Age = %v, actual = %v", intVal, u.Age)
+		}
+		if u.Name != strVal {
+			t.Fatalf("expected Age = %v, actual = %v", intVal, u.Name)
+		}
+		if u.City != strVal {
+			t.Fatalf("expected Age = %v, actual = %v", intVal, u.City)
 		}
 	})
 }

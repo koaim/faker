@@ -1,5 +1,7 @@
 package faker
 
+import "reflect"
+
 const (
 	minContainersLen = 1
 	maxContainersLen = 3
@@ -10,6 +12,14 @@ const (
 var (
 	allowedRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789123456789")
 )
+
+// Custom describes a user-defined generator for values of a specific type.
+type Custom struct {
+	// Type is the type whose values F generates.
+	Type reflect.Type
+	// F generates a value of Type.
+	F func() any
+}
 
 // OptionF is a functional option that configures an Option.
 type OptionF func(o *Option)
@@ -28,6 +38,9 @@ type Option struct {
 	IgnoreFields []string
 	// CloseChannels reports whether generated channels should be closed.
 	CloseChannels bool
+	// CustomFakers lists custom generators applied to values of the types
+	// they specify, overriding the default generation rules.
+	CustomFakers []Custom
 }
 
 // DefaultOption returns an Option with the default generation settings.
@@ -58,17 +71,17 @@ func WithAllowedRunes(r []rune) OptionF {
 
 // WithContainersLen returns an OptionF that sets the min and max length of
 // generated containers (slices, maps).
-func WithContainersLen(min, max int) OptionF {
+func WithContainersLen(min, max uint) OptionF {
 	return func(o *Option) {
-		o.MinContainersLen = min
-		o.MaxContainersLen = max
+		o.MinContainersLen = int(min)
+		o.MaxContainersLen = int(max)
 	}
 }
 
 // WithStrLen returns an OptionF that sets the length of generated strings.
-func WithStrLen(l int) OptionF {
+func WithStrLen(l uint) OptionF {
 	return func(o *Option) {
-		o.StrLen = l
+		o.StrLen = int(l)
 	}
 }
 
@@ -77,5 +90,18 @@ func WithStrLen(l int) OptionF {
 func WithCloseChannels() OptionF {
 	return func(o *Option) {
 		o.CloseChannels = true
+	}
+}
+
+// WithCustomFaker returns an OptionF that appends a Custom generator for
+// values of type T. When a value of that exact type is generated, f is
+// called and its result is used instead of the default generation rules.
+func WithCustomFaker[T any](f func() T) OptionF {
+	t := reflect.TypeFor[T]()
+	return func(o *Option) {
+		o.CustomFakers = append(o.CustomFakers, Custom{
+			Type: t,
+			F:    func() any { return f() },
+		})
 	}
 }
