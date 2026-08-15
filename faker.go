@@ -7,6 +7,8 @@ package faker
 import (
 	"math"
 	"math/rand/v2"
+	"net"
+	"net/url"
 	"reflect"
 	"slices"
 	"time"
@@ -16,8 +18,9 @@ import (
 //
 // It starts from the default options and applies the provided opts in
 // order. Supported types: int/uint, float/complex, string, bool, struct,
-// slice, array, map, chan, time.Time and pointer. Pointers are never nil. Struct
-// fields listed in IgnoreFields and unaddressable fields are skipped.
+// slice, array, map, chan, time.Time, net.IP, url.URL and pointer. Pointers are
+// never nil. Struct fields listed in IgnoreFields and unaddressable fields are
+// skipped.
 func Make[T any](opts ...OptionF) T {
 	o := DefaultOption()
 	for _, v := range opts {
@@ -34,9 +37,11 @@ func Make[T any](opts ...OptionF) T {
 // then applies the override f to it. The override receives a pointer to
 // the generated value and can mutate any part of it before it is
 // returned.
-func MakeAndOverride[T any](f func(v *T), opts ...OptionF) T {
-	v := Make[T](opts...)
-	f(&v)
+func MakeAndOverride[T any](funcs ...func(v *T)) T {
+	v := Make[T]()
+	for _, f := range funcs {
+		f(&v)
+	}
 
 	return v
 }
@@ -69,9 +74,18 @@ func fill(v any, opt Option) {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		fillUint(rv)
 	case reflect.Struct:
-		if rv.Type() == reflect.TypeFor[time.Time]() {
+		switch rv.Type() {
+		case reflect.TypeFor[time.Time]():
 			fillTime(rv)
-		} else {
+		case reflect.TypeFor[url.URL]():
+			fillURL(rv, opt)
+		case reflect.TypeFor[net.IP]():
+			fillIP(rv)
+		case reflect.TypeFor[net.IPMask]():
+			fillIPMask(rv)
+		case reflect.TypeFor[net.IPNet]():
+			fillIPNet(rv)
+		default:
 			fillStruct(rv, opt)
 		}
 	case reflect.Bool:
@@ -196,27 +210,5 @@ func fillPointer(rv reflect.Value, opt Option) {
 }
 
 func fillString(rv reflect.Value, opt Option) {
-	r := make([]rune, opt.StrLen)
-
-	for i := range len(r) {
-		index := rand.IntN(len(opt.AllowedRunes))
-		r[i] = opt.AllowedRunes[index]
-	}
-
-	rv.SetString(string(r))
-}
-
-func fillTime(rv reflect.Value) {
-	minUnix := time.Now().AddDate(-yearsForward, 0, 0).Unix()
-	maxUnix := time.Now().AddDate(yearsForward, 0, 0).Unix()
-	sec := minUnix + rand.Int64N(maxUnix-minUnix+1)
-
-	rv.Set(reflect.ValueOf(time.Unix(sec, rand.Int64N(1e9))))
-}
-
-func randLen(opt Option) int {
-	if opt.MaxContainersLen < opt.MinContainersLen {
-		return opt.MinContainersLen
-	}
-	return opt.MinContainersLen + rand.IntN(opt.MaxContainersLen-opt.MinContainersLen+1)
+	rv.SetString(randStr(opt.AllowedRunes, opt.StrLen))
 }

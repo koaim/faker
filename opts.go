@@ -7,6 +7,15 @@ const (
 	maxContainersLen = 3
 	strLen           = 6
 	yearsForward     = 200
+
+	urlQueryCount   = 2
+	urlWithUserInfo = true
+	pathLen         = 3
+)
+
+var (
+	availableDomainZones = []string{"com", "net", "org", "en", "site"}
+	availableUrlSchemes  = []string{"http", "https"}
 )
 
 var (
@@ -41,6 +50,23 @@ type Option struct {
 	// CustomFakers lists custom generators applied to values of the types
 	// they specify, overriding the default generation rules.
 	CustomFakers []Custom
+
+	// Url is the setting for generating random URL values.
+	Url UrlOption
+}
+
+// UrlOption holds the settings used when generating random URL values.
+type UrlOption struct {
+	// QueryCount is the number of query parameters to add to generated URLs.
+	QueryCount int
+	// WithUserInfo reports whether generated URLs include user info (login and password).
+	WithUserInfo bool
+	// AvailableDomainZones lists the domain zones used to build URL hosts.
+	AvailableDomainZones []string
+	// AvailableSchemes lists the URL schemes used when generating URLs.
+	AvailableSchemes []string
+	// PathLen is the number of path segments in generated URLs.
+	PathLen int
 }
 
 // DefaultOption returns an Option with the default generation settings.
@@ -50,6 +76,13 @@ func DefaultOption() Option {
 		MaxContainersLen: maxContainersLen,
 		AllowedRunes:     allowedRunes,
 		StrLen:           strLen,
+		Url: UrlOption{
+			QueryCount:           urlQueryCount,
+			WithUserInfo:         urlWithUserInfo,
+			AvailableDomainZones: availableDomainZones,
+			AvailableSchemes:     availableUrlSchemes,
+			PathLen:              pathLen,
+		},
 	}
 }
 
