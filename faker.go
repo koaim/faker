@@ -95,6 +95,8 @@ func fill(v any, opt Option) {
 	case reflect.Slice:
 		if rv.Type() == reflect.TypeFor[net.IP]() {
 			fillIP(rv)
+		} else if rv.Type() == reflect.TypeFor[net.IPMask]() {
+			fillIPMask(rv)
 		} else {
 			fillSlice(rv, opt)
 		}

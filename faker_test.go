@@ -19,6 +19,15 @@ func TestMake_Int(t *testing.T) {
 	}
 }
 
+func TestMake_IPMask(t *testing.T) {
+	t.Parallel()
+
+	v := Make[net.IPMask]()
+	if len(v) == 0 {
+		t.Fatal("expected non-zero net.IPMask")
+	}
+}
+
 func TestMake_IP(t *testing.T) {
 	t.Parallel()
 

@@ -53,7 +53,14 @@ func fillIPNet(rv reflect.Value) {
 }
 
 func fillIPMask(rv reflect.Value) {
+	mask := net.IPv4Mask(
+		byte(randInRange(1, math.MaxUint8)),
+		byte(randInRange(1, math.MaxUint8)),
+		byte(randInRange(1, math.MaxUint8)),
+		byte(randInRange(1, math.MaxUint8)),
+	)
 
+	rv.Set(reflect.ValueOf(mask))
 }
 
 func fillTime(rv reflect.Value) {
