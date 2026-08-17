@@ -39,26 +39,27 @@ func fillURL(rv reflect.Value, opt Option) {
 }
 
 func fillIP(rv reflect.Value) {
-	ip := net.IPv4(
-		byte(randInRange(1, math.MaxUint8)),
-		byte(randInRange(1, math.MaxUint8)),
-		byte(randInRange(1, math.MaxUint8)),
-		byte(randInRange(1, math.MaxUint8)),
-	)
+	ip := createIP()
+	mask := net.IPv4(ip[0], ip[1], ip[2], ip[3])
 
-	rv.Set(reflect.ValueOf(ip))
+	rv.Set(reflect.ValueOf(mask))
 }
 
 func fillIPNet(rv reflect.Value) {
+	ip := createIP()
+	mask := createIP()
+
+	ipNet := net.IPNet{
+		IP:   net.IPv4(ip[0], ip[1], ip[2], ip[3]),
+		Mask: net.IPv4Mask(mask[0], mask[1], mask[2], mask[3]),
+	}
+
+	rv.Set(reflect.ValueOf(ipNet))
 }
 
 func fillIPMask(rv reflect.Value) {
-	mask := net.IPv4Mask(
-		byte(randInRange(1, math.MaxUint8)),
-		byte(randInRange(1, math.MaxUint8)),
-		byte(randInRange(1, math.MaxUint8)),
-		byte(randInRange(1, math.MaxUint8)),
-	)
+	ip := createIP()
+	mask := net.IPv4Mask(ip[0], ip[1], ip[2], ip[3])
 
 	rv.Set(reflect.ValueOf(mask))
 }
@@ -69,4 +70,13 @@ func fillTime(rv reflect.Value) {
 	sec := minUnix + rand.Int64N(maxUnix-minUnix+1)
 
 	rv.Set(reflect.ValueOf(time.Unix(sec, rand.Int64N(1e9))))
+}
+
+func createIP() []byte {
+	var res []byte
+	for range 4 {
+		res = append(res, byte(randInRange(1, math.MaxUint8)))
+	}
+
+	return res
 }

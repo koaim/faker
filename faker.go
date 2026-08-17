@@ -79,8 +79,6 @@ func fill(v any, opt Option) {
 			fillTime(rv)
 		case reflect.TypeFor[url.URL]():
 			fillURL(rv, opt)
-		case reflect.TypeFor[net.IPMask]():
-			fillIPMask(rv)
 		case reflect.TypeFor[net.IPNet]():
 			fillIPNet(rv)
 		default:
