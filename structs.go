@@ -1,7 +1,9 @@
 package faker
 
 import (
+	"math"
 	"math/rand/v2"
+	"net"
 	"net/url"
 	"reflect"
 	"strings"
@@ -25,7 +27,9 @@ func fillURL(rv reflect.Value, opt Option) {
 			sb.WriteString("&")
 		}
 	}
-	u.RawQuery = sb.String()
+	if sb.Len() != 0 {
+		u.RawQuery = sb.String()
+	}
 
 	if opt.Url.WithUserInfo {
 		u.User = url.UserPassword(randStr(opt.AllowedRunes, 5), randStr(opt.AllowedRunes, 5))
@@ -35,11 +39,17 @@ func fillURL(rv reflect.Value, opt Option) {
 }
 
 func fillIP(rv reflect.Value) {
+	ip := net.IPv4(
+		byte(randInRange(1, math.MaxUint8)),
+		byte(randInRange(1, math.MaxUint8)),
+		byte(randInRange(1, math.MaxUint8)),
+		byte(randInRange(1, math.MaxUint8)),
+	)
 
+	rv.Set(reflect.ValueOf(ip))
 }
 
 func fillIPNet(rv reflect.Value) {
-
 }
 
 func fillIPMask(rv reflect.Value) {

@@ -1,10 +1,16 @@
 package faker
 
-import "math/rand/v2"
+import (
+	"math/rand/v2"
+)
 
 func randIn[T any](v ...T) T {
 	randInd := rand.IntN(len(v))
 	return v[randInd]
+}
+
+func randInRange(min, max int) int {
+	return min + rand.IntN(max-min+1)
 }
 
 func randStr(r []rune, length int) string {

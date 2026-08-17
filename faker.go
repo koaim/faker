@@ -79,8 +79,6 @@ func fill(v any, opt Option) {
 			fillTime(rv)
 		case reflect.TypeFor[url.URL]():
 			fillURL(rv, opt)
-		case reflect.TypeFor[net.IP]():
-			fillIP(rv)
 		case reflect.TypeFor[net.IPMask]():
 			fillIPMask(rv)
 		case reflect.TypeFor[net.IPNet]():
@@ -95,7 +93,11 @@ func fill(v any, opt Option) {
 	case reflect.Complex64, reflect.Complex128:
 		rv.SetComplex(complex(rand.NormFloat64(), rand.NormFloat64()))
 	case reflect.Slice:
-		fillSlice(rv, opt)
+		if rv.Type() == reflect.TypeFor[net.IP]() {
+			fillIP(rv)
+		} else {
+			fillSlice(rv, opt)
+		}
 	case reflect.Array:
 		fillArray(rv, opt)
 	case reflect.Map:

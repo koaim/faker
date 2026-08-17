@@ -130,10 +130,9 @@ func WithCloseChannels() OptionF {
 // values of type T. When a value of that exact type is generated, f is
 // called and its result is used instead of the default generation rules.
 func WithCustomFaker[T any](f func() T) OptionF {
-	t := reflect.TypeFor[T]()
 	return func(o *Option) {
 		o.CustomFakers = append(o.CustomFakers, Custom{
-			Type: t,
+			Type: reflect.TypeFor[T](),
 			F:    func() any { return f() },
 		})
 	}

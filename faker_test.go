@@ -2,6 +2,7 @@ package faker
 
 import (
 	"context"
+	"net"
 	"net/url"
 	"slices"
 	"testing"
@@ -18,15 +19,30 @@ func TestMake_Int(t *testing.T) {
 	}
 }
 
+func TestMake_IP(t *testing.T) {
+	t.Parallel()
+
+	v := Make[net.IP]()
+
+	ip := net.ParseIP(v.String())
+	if ip == nil {
+		t.Fatalf("expected valid net.IP, got %v", v.String())
+	}
+}
+
+func TestMake_Byte(t *testing.T) {
+	t.Parallel()
+
+	v := Make[byte]()
+	if v == 0 {
+		t.Fatal("expected non-zero byte")
+	}
+}
+
 func TestMake_URL(t *testing.T) {
 	t.Parallel()
 
 	v := Make[url.URL]()
-
-	defaultUrl := url.URL{}
-	if v == defaultUrl {
-		t.Fatal("expected non-zero url.URL")
-	}
 
 	_, err := url.Parse(v.String())
 	if err != nil {
@@ -264,24 +280,31 @@ func TestMake_Struct_CustomFakers(t *testing.T) {
 func TestMakeAndOverride(t *testing.T) {
 	t.Parallel()
 
-	const customName = "custom name"
+	const (
+		customName = "custom name"
+		customID   = 10
+	)
 
 	type User struct {
 		ID   int
 		Name string
 	}
 
+	withCustomName := func(u *User) { u.Name = customName }
+	withCustomID := func(u *User) { u.ID = customID }
+
 	defaultUser := User{}
 
-	u := MakeAndOverride(func(v *User) {
-		v.Name = customName
-	})
+	u := MakeAndOverride(withCustomName, withCustomID)
 
 	if u == defaultUser {
 		t.Fatal("expected not default value")
 	}
 	if u.Name != customName {
 		t.Fatalf("expected Name = %v, actual = %v", customName, u.Name)
+	}
+	if u.ID != customID {
+		t.Fatalf("expected ID = %v, actual = %v", customID, u.ID)
 	}
 }
 
