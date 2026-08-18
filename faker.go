@@ -58,56 +58,56 @@ func MakeWithOption[T any](opt Option) T {
 
 func fill(v any, opt Option) {
 	rv := reflect.ValueOf(v).Elem()
+	rvType := rv.Type()
+	rvKind := rv.Kind()
 
 	for _, f := range opt.CustomFakers {
-		if f.Type == rv.Type() {
+		if f.Type == rvType {
 			rv.Set(reflect.ValueOf(f.F()))
 			return
 		}
 	}
 
-	switch rv.Kind() {
-	case reflect.String:
+	switch rvType {
+	case reflect.TypeFor[string]():
 		fillString(rv, opt)
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+	case reflect.TypeFor[int](), reflect.TypeFor[int8](), reflect.TypeFor[int16](), reflect.TypeFor[int32](), reflect.TypeFor[int64]():
 		fillInt(rv)
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+	case reflect.TypeFor[uint](), reflect.TypeFor[uint8](), reflect.TypeFor[uint16](), reflect.TypeFor[uint32](), reflect.TypeFor[uint64](), reflect.TypeFor[uintptr]():
 		fillUint(rv)
-	case reflect.Struct:
-		switch rv.Type() {
-		case reflect.TypeFor[time.Time]():
-			fillTime(rv)
-		case reflect.TypeFor[url.URL]():
-			fillURL(rv, opt)
-		case reflect.TypeFor[net.IPNet]():
-			fillIPNet(rv)
-		default:
-			fillStruct(rv, opt)
-		}
-	case reflect.Bool:
+	case reflect.TypeFor[time.Time]():
+		fillTime(rv)
+	case reflect.TypeFor[url.URL]():
+		fillURL(rv, opt)
+	case reflect.TypeFor[net.IPNet]():
+		fillIPNet(rv)
+	case reflect.TypeFor[net.IP]():
+		fillIP(rv)
+	case reflect.TypeFor[net.IPMask]():
+		fillIPMask(rv)
+	case reflect.TypeFor[net.HardwareAddr]():
+		fillHardwareAddr(rv)
+	case reflect.TypeFor[bool]():
 		rv.SetBool(true)
-	case reflect.Float64, reflect.Float32:
+	case reflect.TypeFor[float64](), reflect.TypeFor[float32]():
 		rv.SetFloat(rand.NormFloat64())
-	case reflect.Complex64, reflect.Complex128:
+	case reflect.TypeFor[complex64](), reflect.TypeFor[complex128]():
 		rv.SetComplex(complex(rand.NormFloat64(), rand.NormFloat64()))
-	case reflect.Slice:
-		if rv.Type() == reflect.TypeFor[net.IP]() {
-			fillIP(rv)
-		} else if rv.Type() == reflect.TypeFor[net.IPMask]() {
-			fillIPMask(rv)
-		} else if rv.Type() == reflect.TypeFor[net.HardwareAddr]() {
-			fillHardwareAddr(rv)
-		} else {
+	default:
+		switch rvKind {
+		case reflect.Struct:
+			fillStruct(rv, opt)
+		case reflect.Slice:
 			fillSlice(rv, opt)
+		case reflect.Array:
+			fillArray(rv, opt)
+		case reflect.Map:
+			fillMap(rv, opt)
+		case reflect.Chan:
+			fillChan(rv, opt)
+		case reflect.Pointer:
+			fillPointer(rv, opt)
 		}
-	case reflect.Array:
-		fillArray(rv, opt)
-	case reflect.Map:
-		fillMap(rv, opt)
-	case reflect.Chan:
-		fillChan(rv, opt)
-	case reflect.Pointer:
-		fillPointer(rv, opt)
 	}
 }
 
