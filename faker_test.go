@@ -32,8 +32,14 @@ func TestMake_HardwareAddr(t *testing.T) {
 	t.Parallel()
 
 	v := Make[net.HardwareAddr]()
+
+	_, err := net.ParseMAC(v.String())
+
 	if len(v) == 0 {
 		t.Fatal("expected non-zero net.HardwareAddr")
+	}
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
