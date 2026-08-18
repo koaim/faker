@@ -28,6 +28,15 @@ func TestMake_IPMask(t *testing.T) {
 	}
 }
 
+func TestMake_HardwareAddr(t *testing.T) {
+	t.Parallel()
+
+	v := Make[net.HardwareAddr]()
+	if len(v) == 0 {
+		t.Fatal("expected non-zero net.HardwareAddr")
+	}
+}
+
 func TestMake_IP(t *testing.T) {
 	t.Parallel()
 
@@ -226,25 +235,29 @@ func TestMake_Struct_NotSupportedTypes(t *testing.T) {
 	t.Parallel()
 
 	type User struct {
-		Ctx context.Context
-		Any any
-		Err error
-		F   func()
+		Ctx     context.Context
+		Any     any
+		Err     error
+		F       func()
+		private int
 	}
 
 	u := Make[User]()
 
 	if u.Ctx != nil {
-		t.Fatalf("expected nil Ctx, got %v", u.Ctx)
+		t.Fatalf("expected nil u.Ctx, got %v", u.Ctx)
 	}
 	if u.Any != nil {
-		t.Fatalf("expected nil Any, got %v", u.Any)
+		t.Fatalf("expected nil u.Any, got %v", u.Any)
 	}
 	if u.Err != nil {
-		t.Fatalf("expected nil Err, got %v", u.Err)
+		t.Fatalf("expected nil u.Err, got %v", u.Err)
 	}
 	if u.F != nil {
-		t.Fatalf("expected nil F")
+		t.Fatalf("expected nil u.F")
+	}
+	if u.private != 0 {
+		t.Fatal("expected zero u.private")
 	}
 }
 

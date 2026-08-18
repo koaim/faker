@@ -95,6 +95,8 @@ func fill(v any, opt Option) {
 			fillIP(rv)
 		} else if rv.Type() == reflect.TypeFor[net.IPMask]() {
 			fillIPMask(rv)
+		} else if rv.Type() == reflect.TypeFor[net.HardwareAddr]() {
+			fillHardwareAddr(rv)
 		} else {
 			fillSlice(rv, opt)
 		}

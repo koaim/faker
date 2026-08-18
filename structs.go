@@ -64,6 +64,15 @@ func fillIPMask(rv reflect.Value) {
 	rv.Set(reflect.ValueOf(mask))
 }
 
+func fillHardwareAddr(rv reflect.Value) {
+	var mac []byte
+	for range 6 {
+		mac = append(mac, byte(randInRange(0, math.MaxUint8)))
+	}
+
+	rv.Set(reflect.ValueOf(net.HardwareAddr(mac)))
+}
+
 func fillTime(rv reflect.Value) {
 	minUnix := time.Now().AddDate(-yearsForward, 0, 0).Unix()
 	maxUnix := time.Now().AddDate(yearsForward, 0, 0).Unix()
