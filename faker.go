@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"slices"
 	"time"
+	"uuid"
 )
 
 // Make generates and returns a value of type T filled with fake data.
@@ -75,6 +76,8 @@ func fill(v any, opt Option) {
 		fillInt(rv)
 	case reflect.TypeFor[uint](), reflect.TypeFor[uint8](), reflect.TypeFor[uint16](), reflect.TypeFor[uint32](), reflect.TypeFor[uint64](), reflect.TypeFor[uintptr]():
 		fillUint(rv)
+	case reflect.TypeFor[uuid.UUID]():
+		rv.Set(reflect.ValueOf(uuid.NewV7()))
 	case reflect.TypeFor[time.Time]():
 		fillTime(rv)
 	case reflect.TypeFor[url.URL]():

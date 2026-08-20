@@ -8,7 +8,24 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
+	"uuid"
 )
+
+func TestMake_UUID(t *testing.T) {
+	t.Parallel()
+
+	v := Make[uuid.UUID]()
+
+	defaultUUID := uuid.UUID{}
+
+	if v == defaultUUID {
+		t.Fatal("expected non-default uuid.UUID")
+	}
+	_, err := uuid.Parse(v.String())
+	if err != nil {
+		t.Fatal(err)
+	}	
+}
 
 func TestMake_Int(t *testing.T) {
 	t.Parallel()
@@ -277,9 +294,9 @@ func TestMake_Struct_CustomFakers(t *testing.T) {
 
 	type User struct {
 		ID   int
-		Age  int
+		Age  *int
 		Name string
-		City string
+		City *string
 	}
 
 	u := Make[User](
@@ -294,13 +311,13 @@ func TestMake_Struct_CustomFakers(t *testing.T) {
 	if u.ID != intVal {
 		t.Fatalf("expected ID = %v, actual = %v", intVal, u.ID)
 	}
-	if u.Age != intVal {
+	if *u.Age != intVal {
 		t.Fatalf("expected Age = %v, actual = %v", intVal, u.Age)
 	}
 	if u.Name != strVal {
 		t.Fatalf("expected Age = %v, actual = %v", intVal, u.Name)
 	}
-	if u.City != strVal {
+	if *u.City != strVal {
 		t.Fatalf("expected Age = %v, actual = %v", intVal, u.City)
 	}
 }
