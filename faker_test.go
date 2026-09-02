@@ -24,7 +24,7 @@ func TestMake_UUID(t *testing.T) {
 	_, err := uuid.Parse(v.String())
 	if err != nil {
 		t.Fatal(err)
-	}	
+	}
 }
 
 func TestMake_Int(t *testing.T) {
@@ -198,7 +198,7 @@ func TestMake_Array(t *testing.T) {
 		t.Fatalf("expected array length %d, got %d", length, len(v))
 	}
 	if cap(v) != length {
-		t.Fatalf("expected array length %d, got %d", length, cap(v))
+		t.Fatalf("expected array capacity %d, got %d", length, cap(v))
 	}
 }
 

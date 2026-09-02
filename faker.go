@@ -117,30 +117,30 @@ func fill(v any, opt Option) {
 func fillUint(rv reflect.Value) {
 	switch rv.Kind() {
 	case reflect.Uint8:
-		rv.SetUint(rand.Uint64N(math.MaxUint8))
+		rv.SetUint(rand.Uint64N(math.MaxUint8) + 1)
 	case reflect.Uint16:
-		rv.SetUint(rand.Uint64N(math.MaxUint16))
+		rv.SetUint(rand.Uint64N(math.MaxUint16) + 1)
 	case reflect.Uint32:
-		rv.SetUint(rand.Uint64N(math.MaxUint32))
+		rv.SetUint(rand.Uint64N(math.MaxUint32) + 1)
 	case reflect.Uint64:
-		rv.SetUint(rand.Uint64())
+		rv.SetUint(rand.Uint64() + 1)
 	case reflect.Uint, reflect.Uintptr:
-		rv.SetUint(uint64(rand.Uint()))
+		rv.SetUint(uint64(rand.Uint() + 1))
 	}
 }
 
 func fillInt(rv reflect.Value) {
 	switch rv.Kind() {
 	case reflect.Int8:
-		rv.SetInt(rand.Int64N(math.MaxInt8))
+		rv.SetInt(randInRange[int64](1, math.MaxInt8))
 	case reflect.Int16:
-		rv.SetInt(rand.Int64N(math.MaxInt16))
+		rv.SetInt(randInRange[int64](1, math.MaxInt16))
 	case reflect.Int32:
-		rv.SetInt(rand.Int64N(math.MaxInt32))
+		rv.SetInt(randInRange[int64](1, math.MaxInt32))
 	case reflect.Int64:
-		rv.SetInt(rand.Int64N(math.MaxInt64))
+		rv.SetInt(randInRange[int64](1, math.MaxInt64))
 	case reflect.Int:
-		rv.SetInt(rand.Int64N(math.MaxInt))
+		rv.SetInt(randInRange[int64](1, math.MaxInt))
 	}
 }
 
