@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -14,7 +15,10 @@ const (
 	minContainersLen = 1
 	maxContainersLen = 3
 	strLen           = 6
-	yearsForward     = 200
+	timeYearsBack    = 200
+	timeYearsForward = 200
+	// A conservative limit keeps the inclusive Unix-second range within int64.
+	maxTimeYears int64 = math.MaxInt64 / (366 * 24 * 60 * 60)
 
 	urlQueryCount   = 2
 	urlWithUserInfo = true
@@ -43,11 +47,12 @@ type OptionF func(o *Option)
 
 // Option holds the settings used when generating random values.
 type Option struct {
-	// MinContainersLen is the minimum length of generated containers (slices, maps).
+	// MinContainersLen is the minimum requested length of containers (at least 1).
+	// Map key collisions can reduce the resulting map length.
 	MinContainersLen int
-	// MaxContainersLen is the maximum length of generated containers (slices, maps).
+	// MaxContainersLen is the maximum length of slices, maps, and channels.
 	MaxContainersLen int
-	// StrLen is the length of generated strings.
+	// StrLen is the length of generated strings in runes (at least 1).
 	StrLen int
 	// AllowedRunes are the characters used to build random strings.
 	AllowedRunes []rune
@@ -61,6 +66,8 @@ type Option struct {
 
 	// Url is the setting for generating random URL values.
 	Url UrlOption
+	// Time is the setting for generating random time.Time values.
+	Time TimeOption
 }
 
 func (o Option) validate(t *testing.T) {
@@ -74,8 +81,8 @@ func (o Option) validate(t *testing.T) {
 func (o Option) validationError() error {
 	var errs []error
 
-	if o.MinContainersLen < 0 {
-		errs = append(errs, fmt.Errorf("MinContainersLen must be non-negative"))
+	if o.MinContainersLen < 1 {
+		errs = append(errs, fmt.Errorf("MinContainersLen must be >= 1"))
 	}
 
 	if o.MaxContainersLen < o.MinContainersLen {
@@ -86,8 +93,18 @@ func (o Option) validationError() error {
 		errs = append(errs, fmt.Errorf("container length range is too large"))
 	}
 
-	if o.StrLen < 0 {
-		errs = append(errs, fmt.Errorf("StrLen must be non-negative"))
+	if o.StrLen < 1 {
+		errs = append(errs, fmt.Errorf("StrLen must be >= 1"))
+	}
+
+	if o.Time.YearsBack < 0 {
+		errs = append(errs, fmt.Errorf("Time.YearsBack must be non-negative"))
+	}
+	if o.Time.YearsForward < 0 {
+		errs = append(errs, fmt.Errorf("Time.YearsForward must be non-negative"))
+	}
+	if o.Time.YearsBack >= 0 && o.Time.YearsForward >= 0 && int64(o.Time.YearsBack) > maxTimeYears-int64(o.Time.YearsForward) {
+		errs = append(errs, fmt.Errorf("time range is too large"))
 	}
 
 	if len(o.AllowedRunes) == 0 {
@@ -149,8 +166,18 @@ type UrlOption struct {
 	AvailableDomainZones []string
 	// AvailableSchemes lists the URL schemes used when generating URLs.
 	AvailableSchemes []string
-	// PathLen is the number of path segments in generated URLs.
+	// PathLen is the length of the generated URL path in runes.
 	PathLen int
+}
+
+// TimeOption sets the calendar-year range around now for time.Time values.
+// Both zero means the current Unix second, with random nanoseconds.
+// Negative years and ranges that risk Unix-second overflow are rejected.
+type TimeOption struct {
+	// YearsBack is the number of calendar years before now (inclusive).
+	YearsBack int
+	// YearsForward is the number of calendar years after now (inclusive).
+	YearsForward int
 }
 
 // DefaultOption returns an Option with the default generation settings.
@@ -158,13 +185,17 @@ func DefaultOption() Option {
 	return Option{
 		MinContainersLen: minContainersLen,
 		MaxContainersLen: maxContainersLen,
-		AllowedRunes:     allowedRunes,
+		AllowedRunes:     slices.Clone(allowedRunes),
 		StrLen:           strLen,
+		Time: TimeOption{
+			YearsBack:    timeYearsBack,
+			YearsForward: timeYearsForward,
+		},
 		Url: UrlOption{
 			QueryCount:           urlQueryCount,
 			WithUserInfo:         urlWithUserInfo,
-			AvailableDomainZones: availableDomainZones,
-			AvailableSchemes:     availableUrlSchemes,
+			AvailableDomainZones: slices.Clone(availableDomainZones),
+			AvailableSchemes:     slices.Clone(availableUrlSchemes),
 			PathLen:              pathLen,
 		},
 	}
@@ -187,7 +218,7 @@ func WithAllowedRunes(r []rune) OptionF {
 }
 
 // WithContainersLen returns an OptionF that sets the min and max length of
-// generated containers (slices, maps).
+// slices, maps, and channels. The bounds must satisfy 1 <= min <= max.
 func WithContainersLen(min, max uint) OptionF {
 	return func(o *Option) {
 		o.MinContainersLen = int(min)
@@ -195,7 +226,7 @@ func WithContainersLen(min, max uint) OptionF {
 	}
 }
 
-// WithStrLen returns an OptionF that sets the length of generated strings.
+// WithStrLen sets the length of generated strings in runes. l must be at least 1.
 func WithStrLen(l uint) OptionF {
 	return func(o *Option) {
 		o.StrLen = int(l)
@@ -207,6 +238,20 @@ func WithStrLen(l uint) OptionF {
 func WithCloseChannels() OptionF {
 	return func(o *Option) {
 		o.CloseChannels = true
+	}
+}
+
+// WithTimeYearsBack sets the non-negative number of calendar years before now.
+func WithTimeYearsBack(years int) OptionF {
+	return func(o *Option) {
+		o.Time.YearsBack = years
+	}
+}
+
+// WithTimeYearsForward sets the non-negative number of calendar years after now.
+func WithTimeYearsForward(years int) OptionF {
+	return func(o *Option) {
+		o.Time.YearsForward = years
 	}
 }
 

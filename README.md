@@ -25,6 +25,10 @@ This library focuses on that single use case: generating random values and popul
 - Custom generators matched by exact type
 - Option validation reports all detected errors together
 
+String lengths are measured in runes and must be at least 1. Container bounds
+must satisfy `1 <= MinContainersLen <= MaxContainersLen`. Map keys may collide,
+so a generated map can have fewer entries than requested.
+
 ## Usage
 
 ```go
@@ -45,7 +49,7 @@ type User struct {
 
 func TestUser(t *testing.T) {
 	// Generate a value using the default options.
-	u := faker.Make[User]()
+	u := faker.Make[User](t)
 	if u.ID == 0 {
 		t.Fatal("expected a generated ID")
 	}
@@ -56,16 +60,47 @@ func TestUser(t *testing.T) {
 	})
 
 	// Apply functional options to the default options.
-	u = faker.Make[User](
+	u = faker.Make[User](t,
 		faker.WithIgnoreFields("IsAdmin", "Email"),
 		faker.WithStrLen(8),
 		faker.WithAllowedRunes([]rune("abc123")),
 	)
 
 	// Override generation for an exact type, including nested fields.
-	u = faker.Make[User](t, faker.WithCustomFaker(func() int { return 42 }))
+	u = faker.Make[User](t,
+		faker.WithCustomFaker(func() int { return 42 }),
+	)
 }
 ```
+
+## Time generation
+
+By default, `time.Time` values are generated within 200 calendar years before
+and after now. Configure each side independently:
+
+```go
+createdAt := faker.Make[time.Time](t,
+	faker.WithTimeYearsBack(5),
+	faker.WithTimeYearsForward(0),
+)
+```
+
+Alternatively, set `opt.Time = faker.TimeOption{YearsBack: 5, YearsForward: 0}`
+and pass `opt` to `MakeWithOption`. Values must be non-negative. Bounds include
+the entire Unix second; nanoseconds are random. Setting both values to zero
+generates a value within the current Unix second. These settings also apply
+to nested fields and pointers. The example requires importing `time`.
+
+## Supported types
+
+Built-in primitives and special types match by exact type. Defined primitives
+such as `type ID int`, functions, and interfaces other than `error` remain zero
+unless a custom generator is provided. Custom generators can return `nil` for
+interfaces and pointers.
+
+Only bidirectional channels are supported. Recursive type graphs, such as
+`type Node struct { Next *Node }`, require ignoring the recursive field or
+providing a custom generator to stop recursion.
 
 ## License
 

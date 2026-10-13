@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/url"
 	"reflect"
-	"strings"
 	"time"
 )
 
@@ -17,19 +16,11 @@ func fillURL(rv reflect.Value, opt Option) {
 		Path:   randStr(opt.AllowedRunes, opt.Url.PathLen),
 	}
 
-	var sb strings.Builder
-	for i := range opt.Url.QueryCount {
-		sb.WriteString(randStr(opt.AllowedRunes, 5))
-		sb.WriteString("=")
-		sb.WriteString(randStr(opt.AllowedRunes, 3))
-
-		if i != opt.Url.QueryCount-1 {
-			sb.WriteString("&")
-		}
+	query := make(url.Values)
+	for range opt.Url.QueryCount {
+		query.Add(randStr(opt.AllowedRunes, 5), randStr(opt.AllowedRunes, 3))
 	}
-	if sb.Len() != 0 {
-		u.RawQuery = sb.String()
-	}
+	u.RawQuery = query.Encode()
 
 	if opt.Url.WithUserInfo {
 		u.User = url.UserPassword(randStr(opt.AllowedRunes, 5), randStr(opt.AllowedRunes, 5))
@@ -47,19 +38,19 @@ func fillIP(rv reflect.Value) {
 
 func fillIPNet(rv reflect.Value) {
 	ip := createIP()
-	mask := createIP()
+	mask := net.CIDRMask(rand.IntN(33), 32)
+	address := net.IPv4(ip[0], ip[1], ip[2], ip[3])
 
 	ipNet := net.IPNet{
-		IP:   net.IPv4(ip[0], ip[1], ip[2], ip[3]),
-		Mask: net.IPv4Mask(mask[0], mask[1], mask[2], mask[3]),
+		IP:   address.Mask(mask),
+		Mask: mask,
 	}
 
 	rv.Set(reflect.ValueOf(ipNet))
 }
 
 func fillIPMask(rv reflect.Value) {
-	ip := createIP()
-	mask := net.IPv4Mask(ip[0], ip[1], ip[2], ip[3])
+	mask := net.CIDRMask(rand.IntN(33), 32)
 
 	rv.Set(reflect.ValueOf(mask))
 }
@@ -73,9 +64,10 @@ func fillHardwareAddr(rv reflect.Value) {
 	rv.Set(reflect.ValueOf(net.HardwareAddr(mac)))
 }
 
-func fillTime(rv reflect.Value) {
-	minUnix := time.Now().AddDate(-yearsForward, 0, 0).Unix()
-	maxUnix := time.Now().AddDate(yearsForward, 0, 0).Unix()
+func fillTime(rv reflect.Value, opt Option) {
+	now := time.Now()
+	minUnix := now.AddDate(-opt.Time.YearsBack, 0, 0).Unix()
+	maxUnix := now.AddDate(opt.Time.YearsForward, 0, 0).Unix()
 	sec := minUnix + rand.Int64N(maxUnix-minUnix+1)
 
 	rv.Set(reflect.ValueOf(time.Unix(sec, rand.Int64N(1e9))))

@@ -17,18 +17,25 @@ import (
 	"uuid"
 )
 
-// Make generates and returns a value of type T filled with fake data.
+// Make returns fake data of type T, applying opts to defaults in order.
+// Invalid options fail the test via t.Fatal.
 //
-// It starts from the default options and applies the provided opts in
-// order. Supported types: int/uint, float/complex, string, bool, struct,
-// slice, array, map, chan, time.Time, net.IP, url.URL and pointer. Pointers are
-// never nil. Struct fields listed in IgnoreFields and unaddressable fields are
-// skipped.
-func Make[T any](opts ...OptionF) T {
+// Supports all built-in integers (including byte, rune, uintptr), floats,
+// complex numbers, string, bool, uuid.UUID, time.Time, url.URL, net.IP,
+// net.IPMask, net.IPNet, net.HardwareAddr, and error by exact type.
+// Distinct defined types such as type ID int need a CustomFaker.
+//
+// Recursively fills structs, slices, arrays, maps, buffered bidirectional
+// channels, and pointers (non-nil by default). Skips fields in IgnoreFields
+// or that cannot be set.
+func Make[T any](t *testing.T, opts ...OptionF) T {
+	t.Helper()
+
 	o := DefaultOption()
 	for _, v := range opts {
 		v(&o)
 	}
+	o.validate(t)
 
 	var v T
 	fill(&v, o)
@@ -36,12 +43,15 @@ func Make[T any](opts ...OptionF) T {
 	return v
 }
 
-// MakeAndOverride generates a value of type T using the default rules,
-// then applies the override f to it. The override receives a pointer to
-// the generated value and can mutate any part of it before it is
-// returned.
+// MakeAndOverride generates a value with default options, then applies funcs
+// in order before returning the value. Each function receives a pointer
+// to the value and can modify any part of it.
 func MakeAndOverride[T any](funcs ...func(v *T)) T {
-	v := Make[T]()
+	o := DefaultOption()
+
+	var v T
+	fill(&v, o)
+
 	for _, f := range funcs {
 		f(&v)
 	}
@@ -49,9 +59,8 @@ func MakeAndOverride[T any](funcs ...func(v *T)) T {
 	return v
 }
 
-// MakeWithOption generates a value of type T using a single preconfigured
-// Option, exactly as given. Unlike Make, it does not start from the
-// defaults and applies no overrides.
+// MakeWithOption returns fake data of type T using opt as given, without
+// merging defaults. It validates opt first and calls t.Fatal if invalid.
 func MakeWithOption[T any](t *testing.T, opt Option) T {
 	t.Helper()
 
@@ -70,7 +79,12 @@ func fill(v any, opt Option) {
 
 	for _, f := range opt.CustomFakers {
 		if f.Type == rvType {
-			rv.Set(reflect.ValueOf(f.F()))
+			value := reflect.ValueOf(f.F())
+			if !value.IsValid() && rvKind == reflect.Interface {
+				rv.SetZero()
+			} else {
+				rv.Set(value)
+			}
 			return
 		}
 	}
@@ -85,7 +99,7 @@ func fill(v any, opt Option) {
 	case reflect.TypeFor[uuid.UUID]():
 		rv.Set(reflect.ValueOf(uuid.NewV7()))
 	case reflect.TypeFor[time.Time]():
-		fillTime(rv)
+		fillTime(rv, opt)
 	case reflect.TypeFor[url.URL]():
 		fillURL(rv, opt)
 	case reflect.TypeFor[net.IPNet]():
@@ -131,9 +145,9 @@ func fillUint(rv reflect.Value) {
 	case reflect.Uint32:
 		rv.SetUint(rand.Uint64N(math.MaxUint32) + 1)
 	case reflect.Uint64:
-		rv.SetUint(rand.Uint64() + 1)
+		rv.SetUint(rand.Uint64N(math.MaxUint64) + 1)
 	case reflect.Uint, reflect.Uintptr:
-		rv.SetUint(uint64(rand.Uint() + 1))
+		rv.SetUint(uint64(rand.UintN(math.MaxUint) + 1))
 	}
 }
 
