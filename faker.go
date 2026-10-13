@@ -5,12 +5,14 @@
 package faker
 
 import (
+	"errors"
 	"math"
 	"math/rand/v2"
 	"net"
 	"net/url"
 	"reflect"
 	"slices"
+	"testing"
 	"time"
 	"uuid"
 )
@@ -22,11 +24,14 @@ import (
 // slice, array, map, chan, time.Time, net.IP, url.URL and pointer. Pointers are
 // never nil. Struct fields listed in IgnoreFields and unaddressable fields are
 // skipped.
-func Make[T any](opts ...OptionF) T {
+func Make[T any](t *testing.T, opts ...OptionF) T {
+	t.Helper()
+
 	o := DefaultOption()
 	for _, v := range opts {
 		v(&o)
 	}
+	o.validate(t)
 
 	var v T
 	fill(&v, o)
@@ -38,8 +43,8 @@ func Make[T any](opts ...OptionF) T {
 // then applies the override f to it. The override receives a pointer to
 // the generated value and can mutate any part of it before it is
 // returned.
-func MakeAndOverride[T any](funcs ...func(v *T)) T {
-	v := Make[T]()
+func MakeAndOverride[T any](t *testing.T, funcs ...func(v *T)) T {
+	v := Make[T](t)
 	for _, f := range funcs {
 		f(&v)
 	}
@@ -50,7 +55,10 @@ func MakeAndOverride[T any](funcs ...func(v *T)) T {
 // MakeWithOption generates a value of type T using a single preconfigured
 // Option, exactly as given. Unlike Make, it does not start from the
 // defaults and applies no overrides.
-func MakeWithOption[T any](opt Option) T {
+func MakeWithOption[T any](t *testing.T, opt Option) T {
+	t.Helper()
+	opt.validate(t)
+
 	var v T
 	fill(&v, opt)
 
@@ -92,6 +100,8 @@ func fill(v any, opt Option) {
 		fillHardwareAddr(rv)
 	case reflect.TypeFor[bool]():
 		rv.SetBool(true)
+	case reflect.TypeFor[error]():
+		rv.Set(reflect.ValueOf(errors.New(randStr(opt.AllowedRunes, opt.StrLen))))
 	case reflect.TypeFor[float64](), reflect.TypeFor[float32]():
 		rv.SetFloat(rand.NormFloat64())
 	case reflect.TypeFor[complex64](), reflect.TypeFor[complex128]():

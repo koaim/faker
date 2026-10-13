@@ -1,6 +1,14 @@
 package faker
 
-import "reflect"
+import (
+	"errors"
+	"fmt"
+	"math"
+	"reflect"
+	"strings"
+	"testing"
+	"unicode/utf8"
+)
 
 const (
 	minContainersLen = 1
@@ -53,6 +61,82 @@ type Option struct {
 
 	// Url is the setting for generating random URL values.
 	Url UrlOption
+}
+
+func (o Option) validate(t *testing.T) {
+	t.Helper()
+
+	if err := o.validationError(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func (o Option) validationError() error {
+	var errs []error
+
+	if o.MinContainersLen < 0 {
+		errs = append(errs, fmt.Errorf("MinContainersLen must be non-negative"))
+	}
+
+	if o.MaxContainersLen < o.MinContainersLen {
+		errs = append(errs, fmt.Errorf("MaxContainersLen must be >= MinContainersLen"))
+	}
+
+	if o.MaxContainersLen-o.MinContainersLen == math.MaxInt {
+		errs = append(errs, fmt.Errorf("container length range is too large"))
+	}
+
+	if o.StrLen < 0 {
+		errs = append(errs, fmt.Errorf("StrLen must be non-negative"))
+	}
+
+	if len(o.AllowedRunes) == 0 {
+		errs = append(errs, fmt.Errorf("AllowedRunes must not be empty"))
+	}
+
+	for i, r := range o.AllowedRunes {
+		if !utf8.ValidRune(r) {
+			errs = append(errs, fmt.Errorf("AllowedRunes[%d] must be a valid Unicode rune", i))
+		}
+	}
+
+	seenTypes := make(map[reflect.Type]int, len(o.CustomFakers))
+	for i, f := range o.CustomFakers {
+		if f.Type == nil {
+			errs = append(errs, fmt.Errorf("CustomFakers[%d].Type must not be nil", i))
+		} else if first, ok := seenTypes[f.Type]; ok {
+			errs = append(errs, fmt.Errorf("CustomFakers[%d].Type duplicates CustomFakers[%d].Type (%v)", i, first, f.Type))
+		} else {
+			seenTypes[f.Type] = i
+		}
+		if f.F == nil {
+			errs = append(errs, fmt.Errorf("CustomFakers[%d].F must not be nil", i))
+		}
+	}
+
+	if o.Url.QueryCount < 0 {
+		errs = append(errs, fmt.Errorf("Url.QueryCount must be non-negative"))
+	}
+
+	if o.Url.PathLen < 0 {
+		errs = append(errs, fmt.Errorf("Url.PathLen must be non-negative"))
+	}
+
+	if len(o.Url.AvailableDomainZones) == 0 {
+		errs = append(errs, fmt.Errorf("Url.AvailableDomainZones must not be empty"))
+	}
+
+	for i, zone := range o.Url.AvailableDomainZones {
+		if strings.TrimSpace(zone) == "" {
+			errs = append(errs, fmt.Errorf("Url.AvailableDomainZones[%d] must not be empty", i))
+		}
+	}
+
+	if len(o.Url.AvailableSchemes) == 0 {
+		errs = append(errs, fmt.Errorf("Url.AvailableSchemes must not be empty"))
+	}
+
+	return errors.Join(errs...)
 }
 
 // UrlOption holds the settings used when generating random URL values.
@@ -131,9 +215,13 @@ func WithCloseChannels() OptionF {
 // called and its result is used instead of the default generation rules.
 func WithCustomFaker[T any](f func() T) OptionF {
 	return func(o *Option) {
+		var generator func() any
+		if f != nil {
+			generator = func() any { return f() }
+		}
 		o.CustomFakers = append(o.CustomFakers, Custom{
 			Type: reflect.TypeFor[T](),
-			F:    func() any { return f() },
+			F:    generator,
 		})
 	}
 }
