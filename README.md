@@ -45,7 +45,7 @@ type User struct {
 
 func TestUser(t *testing.T) {
 	// Generate a value using the default options.
-	u := faker.Make[User](t)
+	u := faker.Make[User]()
 	if u.ID == 0 {
 		t.Fatal("expected a generated ID")
 	}
@@ -55,8 +55,8 @@ func TestUser(t *testing.T) {
 		v.Email = "test@example.com"
 	})
 
-	// Apply functional options to the defaults.
-	u = faker.Make[User](t,
+	// Apply functional options to the default options.
+	u = faker.Make[User](
 		faker.WithIgnoreFields("IsAdmin", "Email"),
 		faker.WithStrLen(8),
 		faker.WithAllowedRunes([]rune("abc123")),

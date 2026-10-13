@@ -24,14 +24,11 @@ import (
 // slice, array, map, chan, time.Time, net.IP, url.URL and pointer. Pointers are
 // never nil. Struct fields listed in IgnoreFields and unaddressable fields are
 // skipped.
-func Make[T any](t *testing.T, opts ...OptionF) T {
-	t.Helper()
-
+func Make[T any](opts ...OptionF) T {
 	o := DefaultOption()
 	for _, v := range opts {
 		v(&o)
 	}
-	o.validate(t)
 
 	var v T
 	fill(&v, o)
@@ -43,8 +40,8 @@ func Make[T any](t *testing.T, opts ...OptionF) T {
 // then applies the override f to it. The override receives a pointer to
 // the generated value and can mutate any part of it before it is
 // returned.
-func MakeAndOverride[T any](t *testing.T, funcs ...func(v *T)) T {
-	v := Make[T](t)
+func MakeAndOverride[T any](funcs ...func(v *T)) T {
+	v := Make[T]()
 	for _, f := range funcs {
 		f(&v)
 	}
@@ -57,6 +54,7 @@ func MakeAndOverride[T any](t *testing.T, funcs ...func(v *T)) T {
 // defaults and applies no overrides.
 func MakeWithOption[T any](t *testing.T, opt Option) T {
 	t.Helper()
+
 	opt.validate(t)
 
 	var v T

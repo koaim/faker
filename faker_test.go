@@ -14,7 +14,7 @@ import (
 func TestMake_UUID(t *testing.T) {
 	t.Parallel()
 
-	v := Make[uuid.UUID](t)
+	v := Make[uuid.UUID]()
 
 	defaultUUID := uuid.UUID{}
 
@@ -27,10 +27,41 @@ func TestMake_UUID(t *testing.T) {
 	}
 }
 
+func TestMake_EmptyStruct(t *testing.T) {
+	t.Parallel()
+
+	type User struct{}
+
+	defaultUser := User{}
+
+	u := Make[User]()
+	if u != defaultUser {
+		t.Fatal("expected zero User value")
+	}
+}
+
+func TestMake_AnonymousStruct(t *testing.T) {
+	t.Parallel()
+
+	u := Make[struct {
+		ID   int
+		Name string
+	}]()
+
+	defaultUser := struct {
+		ID   int
+		Name string
+	}{}
+
+	if u == defaultUser {
+		t.Fatal("expected non-default Users")
+	}
+}
+
 func TestMake_Int(t *testing.T) {
 	t.Parallel()
 
-	v := Make[int](t)
+	v := Make[int]()
 	if v == 0 {
 		t.Fatal("expected non-zero int")
 	}
@@ -39,7 +70,7 @@ func TestMake_Int(t *testing.T) {
 func TestMake_IPMask(t *testing.T) {
 	t.Parallel()
 
-	v := Make[net.IPMask](t)
+	v := Make[net.IPMask]()
 	if len(v) == 0 {
 		t.Fatal("expected non-zero net.IPMask")
 	}
@@ -48,7 +79,7 @@ func TestMake_IPMask(t *testing.T) {
 func TestMake_HardwareAddr(t *testing.T) {
 	t.Parallel()
 
-	v := Make[net.HardwareAddr](t)
+	v := Make[net.HardwareAddr]()
 
 	_, err := net.ParseMAC(v.String())
 
@@ -63,7 +94,7 @@ func TestMake_HardwareAddr(t *testing.T) {
 func TestMake_IP(t *testing.T) {
 	t.Parallel()
 
-	v := Make[net.IP](t)
+	v := Make[net.IP]()
 
 	ip := net.ParseIP(v.String())
 	if ip == nil {
@@ -74,7 +105,7 @@ func TestMake_IP(t *testing.T) {
 func TestMake_Byte(t *testing.T) {
 	t.Parallel()
 
-	v := Make[byte](t)
+	v := Make[byte]()
 	if v == 0 {
 		t.Fatal("expected non-zero byte")
 	}
@@ -83,7 +114,7 @@ func TestMake_Byte(t *testing.T) {
 func TestMake_URL(t *testing.T) {
 	t.Parallel()
 
-	v := Make[url.URL](t)
+	v := Make[url.URL]()
 
 	_, err := url.Parse(v.String())
 	if err != nil {
@@ -94,7 +125,7 @@ func TestMake_URL(t *testing.T) {
 func TestMake_Uint(t *testing.T) {
 	t.Parallel()
 
-	v := Make[uint](t)
+	v := Make[uint]()
 	if v == 0 {
 		t.Fatal("expected non-zero uint")
 	}
@@ -103,7 +134,7 @@ func TestMake_Uint(t *testing.T) {
 func TestMake_Uintptr(t *testing.T) {
 	t.Parallel()
 
-	v := Make[uintptr](t)
+	v := Make[uintptr]()
 	if v == 0 {
 		t.Fatal("expected non-zero uintptr")
 	}
@@ -112,7 +143,7 @@ func TestMake_Uintptr(t *testing.T) {
 func TestMake_Time(t *testing.T) {
 	t.Parallel()
 
-	v := Make[time.Time](t)
+	v := Make[time.Time]()
 	if v.Equal(time.Time{}) {
 		t.Fatal("expected non-zero time.Time")
 	}
@@ -121,7 +152,7 @@ func TestMake_Time(t *testing.T) {
 func TestMake_TimePointer(t *testing.T) {
 	t.Parallel()
 
-	v := Make[*time.Time](t)
+	v := Make[*time.Time]()
 	if v == nil {
 		t.Fatal("expected non-nil value")
 	}
@@ -133,7 +164,7 @@ func TestMake_TimePointer(t *testing.T) {
 func TestMake_Bool(t *testing.T) {
 	t.Parallel()
 
-	v := Make[bool](t)
+	v := Make[bool]()
 	if v == false {
 		t.Fatal("expected non-zero bool")
 	}
@@ -142,7 +173,7 @@ func TestMake_Bool(t *testing.T) {
 func TestMake_Float64(t *testing.T) {
 	t.Parallel()
 
-	v := Make[float64](t)
+	v := Make[float64]()
 	if v == 0 {
 		t.Fatal("expected non-zero float46")
 	}
@@ -151,7 +182,7 @@ func TestMake_Float64(t *testing.T) {
 func TestMake_Complex64(t *testing.T) {
 	t.Parallel()
 
-	v := Make[complex64](t)
+	v := Make[complex64]()
 	if v == 0 {
 		t.Fatal("expected non-zero complex64")
 	}
@@ -160,7 +191,7 @@ func TestMake_Complex64(t *testing.T) {
 func TestMake_Slice(t *testing.T) {
 	t.Parallel()
 
-	v := Make[[]int](t)
+	v := Make[[]int]()
 	if len(v) < DefaultOption().MinContainersLen || len(v) > DefaultOption().MaxContainersLen {
 		t.Fatalf("expected slice length in range [%d, %d], got %d", DefaultOption().MinContainersLen, DefaultOption().MaxContainersLen, len(v))
 	}
@@ -174,7 +205,7 @@ func TestMake_Slice(t *testing.T) {
 func TestMake_Map(t *testing.T) {
 	t.Parallel()
 
-	v := Make[map[string]string](t)
+	v := Make[map[string]string]()
 	if len(v) < DefaultOption().MinContainersLen || len(v) > DefaultOption().MaxContainersLen {
 		t.Fatalf("expected map length in range [%d, %d], got %d", DefaultOption().MinContainersLen, DefaultOption().MaxContainersLen, len(v))
 	}
@@ -193,7 +224,7 @@ func TestMake_Array(t *testing.T) {
 
 	const length = 4
 
-	v := Make[[length]int](t)
+	v := Make[[length]int]()
 	if len(v) != length {
 		t.Fatalf("expected array length %d, got %d", length, len(v))
 	}
@@ -210,7 +241,7 @@ func TestMake_Array(t *testing.T) {
 func TestMake_String(t *testing.T) {
 	t.Parallel()
 
-	v := Make[string](t)
+	v := Make[string]()
 	if utf8.RuneCountInString(v) != DefaultOption().StrLen {
 		t.Fatalf("expected string length %d, got %d", DefaultOption().StrLen, len(v))
 	}
@@ -224,7 +255,7 @@ func TestMake_String(t *testing.T) {
 func TestMake_Chan(t *testing.T) {
 	t.Parallel()
 
-	v := Make[chan int](t)
+	v := Make[chan int]()
 	if len(v) == 0 {
 		t.Fatal("expected non-empty chan")
 	}
@@ -233,7 +264,7 @@ func TestMake_Chan(t *testing.T) {
 func TestMake_Error(t *testing.T) {
 	t.Parallel()
 
-	v := Make[error](t)
+	v := Make[error]()
 
 	if v == nil {
 		t.Fatal("expected non-nil error")
@@ -260,9 +291,9 @@ func TestMake_Struct(t *testing.T) {
 	defaultUser := User{}
 	defaultOrder := Order[string]{}
 
-	u := Make[User](t)
+	u := Make[User]()
 	if u == defaultUser {
-		t.Fatal("expected non-zero User value")
+		t.Fatal("expected non-default User value")
 	}
 	if u.Order == nil || *u.Order == defaultOrder {
 		t.Fatal("expected non-nil and non-empty Order value")
@@ -279,7 +310,7 @@ func TestMake_Struct_NotSupportedTypes(t *testing.T) {
 		private int
 	}
 
-	u := Make[User](t)
+	u := Make[User]()
 
 	if u.Ctx != nil {
 		t.Fatalf("expected nil u.Ctx, got %v", u.Ctx)
@@ -310,7 +341,7 @@ func TestMake_Struct_CustomFakers(t *testing.T) {
 		City *string
 	}
 
-	u := Make[User](t,
+	u := Make[User](
 		WithCustomFaker(func() string { return strVal }),
 		WithCustomFaker(func() int { return intVal }),
 	)
@@ -347,7 +378,7 @@ func TestMakeAndOverride(t *testing.T) {
 
 	defaultUser := User{}
 
-	u := MakeAndOverride(t, withCustomName, withCustomID)
+	u := MakeAndOverride(withCustomName, withCustomID)
 
 	if u == defaultUser {
 		t.Fatal("expected not default value")
