@@ -1,12 +1,33 @@
 package faker
 
-import "reflect"
+import (
+	"errors"
+	"fmt"
+	"math"
+	"reflect"
+	"slices"
+	"strings"
+	"testing"
+	"unicode/utf8"
+)
 
 const (
 	minContainersLen = 1
 	maxContainersLen = 3
 	strLen           = 6
-	yearsForward     = 200
+	timeYearsBack    = 200
+	timeYearsForward = 200
+	// A conservative limit keeps the inclusive Unix-second range within int64.
+	maxTimeYears int64 = math.MaxInt64 / (366 * 24 * 60 * 60)
+
+	urlQueryCount   = 2
+	urlWithUserInfo = true
+	pathLen         = 3
+)
+
+var (
+	availableDomainZones = []string{"com", "net", "org", "en", "site"}
+	availableUrlSchemes  = []string{"http", "https"}
 )
 
 var (
@@ -26,11 +47,12 @@ type OptionF func(o *Option)
 
 // Option holds the settings used when generating random values.
 type Option struct {
-	// MinContainersLen is the minimum length of generated containers (slices, maps).
+	// MinContainersLen is the minimum requested length of containers (at least 1).
+	// Map key collisions can reduce the resulting map length.
 	MinContainersLen int
-	// MaxContainersLen is the maximum length of generated containers (slices, maps).
+	// MaxContainersLen is the maximum length of slices, maps, and channels.
 	MaxContainersLen int
-	// StrLen is the length of generated strings.
+	// StrLen is the length of generated strings in runes (at least 1).
 	StrLen int
 	// AllowedRunes are the characters used to build random strings.
 	AllowedRunes []rune
@@ -41,6 +63,121 @@ type Option struct {
 	// CustomFakers lists custom generators applied to values of the types
 	// they specify, overriding the default generation rules.
 	CustomFakers []Custom
+
+	// Url is the setting for generating random URL values.
+	Url UrlOption
+	// Time is the setting for generating random time.Time values.
+	Time TimeOption
+}
+
+func (o Option) validate(t *testing.T) {
+	t.Helper()
+
+	if err := o.validationError(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func (o Option) validationError() error {
+	var errs []error
+
+	if o.MinContainersLen < 1 {
+		errs = append(errs, fmt.Errorf("MinContainersLen must be >= 1"))
+	}
+
+	if o.MaxContainersLen < o.MinContainersLen {
+		errs = append(errs, fmt.Errorf("MaxContainersLen must be >= MinContainersLen"))
+	}
+
+	if o.MaxContainersLen-o.MinContainersLen == math.MaxInt {
+		errs = append(errs, fmt.Errorf("container length range is too large"))
+	}
+
+	if o.StrLen < 1 {
+		errs = append(errs, fmt.Errorf("StrLen must be >= 1"))
+	}
+
+	if o.Time.YearsBack < 0 {
+		errs = append(errs, fmt.Errorf("Time.YearsBack must be non-negative"))
+	}
+	if o.Time.YearsForward < 0 {
+		errs = append(errs, fmt.Errorf("Time.YearsForward must be non-negative"))
+	}
+	if o.Time.YearsBack >= 0 && o.Time.YearsForward >= 0 && int64(o.Time.YearsBack) > maxTimeYears-int64(o.Time.YearsForward) {
+		errs = append(errs, fmt.Errorf("time range is too large"))
+	}
+
+	if len(o.AllowedRunes) == 0 {
+		errs = append(errs, fmt.Errorf("AllowedRunes must not be empty"))
+	}
+
+	for i, r := range o.AllowedRunes {
+		if !utf8.ValidRune(r) {
+			errs = append(errs, fmt.Errorf("AllowedRunes[%d] must be a valid Unicode rune", i))
+		}
+	}
+
+	seenTypes := make(map[reflect.Type]int, len(o.CustomFakers))
+	for i, f := range o.CustomFakers {
+		if f.Type == nil {
+			errs = append(errs, fmt.Errorf("CustomFakers[%d].Type must not be nil", i))
+		} else if first, ok := seenTypes[f.Type]; ok {
+			errs = append(errs, fmt.Errorf("CustomFakers[%d].Type duplicates CustomFakers[%d].Type (%v)", i, first, f.Type))
+		} else {
+			seenTypes[f.Type] = i
+		}
+		if f.F == nil {
+			errs = append(errs, fmt.Errorf("CustomFakers[%d].F must not be nil", i))
+		}
+	}
+
+	if o.Url.QueryCount < 0 {
+		errs = append(errs, fmt.Errorf("Url.QueryCount must be non-negative"))
+	}
+
+	if o.Url.PathLen < 0 {
+		errs = append(errs, fmt.Errorf("Url.PathLen must be non-negative"))
+	}
+
+	if len(o.Url.AvailableDomainZones) == 0 {
+		errs = append(errs, fmt.Errorf("Url.AvailableDomainZones must not be empty"))
+	}
+
+	for i, zone := range o.Url.AvailableDomainZones {
+		if strings.TrimSpace(zone) == "" {
+			errs = append(errs, fmt.Errorf("Url.AvailableDomainZones[%d] must not be empty", i))
+		}
+	}
+
+	if len(o.Url.AvailableSchemes) == 0 {
+		errs = append(errs, fmt.Errorf("Url.AvailableSchemes must not be empty"))
+	}
+
+	return errors.Join(errs...)
+}
+
+// UrlOption holds the settings used when generating random URL values.
+type UrlOption struct {
+	// QueryCount is the number of query parameters to add to generated URLs.
+	QueryCount int
+	// WithUserInfo reports whether generated URLs include user info (login and password).
+	WithUserInfo bool
+	// AvailableDomainZones lists the domain zones used to build URL hosts.
+	AvailableDomainZones []string
+	// AvailableSchemes lists the URL schemes used when generating URLs.
+	AvailableSchemes []string
+	// PathLen is the length of the generated URL path in runes.
+	PathLen int
+}
+
+// TimeOption sets the calendar-year range around now for time.Time values.
+// Both zero means the current Unix second, with random nanoseconds.
+// Negative years and ranges that risk Unix-second overflow are rejected.
+type TimeOption struct {
+	// YearsBack is the number of calendar years before now (inclusive).
+	YearsBack int
+	// YearsForward is the number of calendar years after now (inclusive).
+	YearsForward int
 }
 
 // DefaultOption returns an Option with the default generation settings.
@@ -48,8 +185,19 @@ func DefaultOption() Option {
 	return Option{
 		MinContainersLen: minContainersLen,
 		MaxContainersLen: maxContainersLen,
-		AllowedRunes:     allowedRunes,
+		AllowedRunes:     slices.Clone(allowedRunes),
 		StrLen:           strLen,
+		Time: TimeOption{
+			YearsBack:    timeYearsBack,
+			YearsForward: timeYearsForward,
+		},
+		Url: UrlOption{
+			QueryCount:           urlQueryCount,
+			WithUserInfo:         urlWithUserInfo,
+			AvailableDomainZones: slices.Clone(availableDomainZones),
+			AvailableSchemes:     slices.Clone(availableUrlSchemes),
+			PathLen:              pathLen,
+		},
 	}
 }
 
@@ -70,7 +218,7 @@ func WithAllowedRunes(r []rune) OptionF {
 }
 
 // WithContainersLen returns an OptionF that sets the min and max length of
-// generated containers (slices, maps).
+// slices, maps, and channels. The bounds must satisfy 1 <= min <= max.
 func WithContainersLen(min, max uint) OptionF {
 	return func(o *Option) {
 		o.MinContainersLen = int(min)
@@ -78,7 +226,7 @@ func WithContainersLen(min, max uint) OptionF {
 	}
 }
 
-// WithStrLen returns an OptionF that sets the length of generated strings.
+// WithStrLen sets the length of generated strings in runes. l must be at least 1.
 func WithStrLen(l uint) OptionF {
 	return func(o *Option) {
 		o.StrLen = int(l)
@@ -93,15 +241,32 @@ func WithCloseChannels() OptionF {
 	}
 }
 
+// WithTimeYearsBack sets the non-negative number of calendar years before now.
+func WithTimeYearsBack(years int) OptionF {
+	return func(o *Option) {
+		o.Time.YearsBack = years
+	}
+}
+
+// WithTimeYearsForward sets the non-negative number of calendar years after now.
+func WithTimeYearsForward(years int) OptionF {
+	return func(o *Option) {
+		o.Time.YearsForward = years
+	}
+}
+
 // WithCustomFaker returns an OptionF that appends a Custom generator for
 // values of type T. When a value of that exact type is generated, f is
 // called and its result is used instead of the default generation rules.
 func WithCustomFaker[T any](f func() T) OptionF {
-	t := reflect.TypeFor[T]()
 	return func(o *Option) {
+		var generator func() any
+		if f != nil {
+			generator = func() any { return f() }
+		}
 		o.CustomFakers = append(o.CustomFakers, Custom{
-			Type: t,
-			F:    func() any { return f() },
+			Type: reflect.TypeFor[T](),
+			F:    generator,
 		})
 	}
 }

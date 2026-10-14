@@ -5,24 +5,37 @@
 package faker
 
 import (
+	"errors"
 	"math"
 	"math/rand/v2"
+	"net"
+	"net/url"
 	"reflect"
 	"slices"
+	"testing"
 	"time"
+	"uuid"
 )
 
-// Make generates and returns a value of type T filled with fake data.
+// Make returns fake data of type T, applying opts to defaults in order.
+// Invalid options fail the test via t.Fatal.
 //
-// It starts from the default options and applies the provided opts in
-// order. Supported types: int/uint, float/complex, string, bool, struct,
-// slice, array, map, chan, time.Time and pointer. Pointers are never nil. Struct
-// fields listed in IgnoreFields and unaddressable fields are skipped.
-func Make[T any](opts ...OptionF) T {
+// Supports all built-in integers (including byte, rune, uintptr), floats,
+// complex numbers, string, bool, uuid.UUID, time.Time, url.URL, net.IP,
+// net.IPMask, net.IPNet, net.HardwareAddr, and error by exact type.
+// Distinct defined types such as type ID int need a CustomFaker.
+//
+// Recursively fills structs, slices, arrays, maps, buffered bidirectional
+// channels, and pointers (non-nil by default). Skips fields in IgnoreFields
+// or that cannot be set.
+func Make[T any](t *testing.T, opts ...OptionF) T {
+	t.Helper()
+
 	o := DefaultOption()
 	for _, v := range opts {
 		v(&o)
 	}
+	o.validate(t)
 
 	var v T
 	fill(&v, o)
@@ -30,21 +43,29 @@ func Make[T any](opts ...OptionF) T {
 	return v
 }
 
-// MakeAndOverride generates a value of type T using the default rules,
-// then applies the override f to it. The override receives a pointer to
-// the generated value and can mutate any part of it before it is
-// returned.
-func MakeAndOverride[T any](f func(v *T), opts ...OptionF) T {
-	v := Make[T](opts...)
-	f(&v)
+// MakeAndOverride generates a value with default options, then applies funcs
+// in order before returning the value. Each function receives a pointer
+// to the value and can modify any part of it.
+func MakeAndOverride[T any](funcs ...func(v *T)) T {
+	o := DefaultOption()
+
+	var v T
+	fill(&v, o)
+
+	for _, f := range funcs {
+		f(&v)
+	}
 
 	return v
 }
 
-// MakeWithOption generates a value of type T using a single preconfigured
-// Option, exactly as given. Unlike Make, it does not start from the
-// defaults and applies no overrides.
-func MakeWithOption[T any](opt Option) T {
+// MakeWithOption returns fake data of type T using opt as given, without
+// merging defaults. It validates opt first and calls t.Fatal if invalid.
+func MakeWithOption[T any](t *testing.T, opt Option) T {
+	t.Helper()
+
+	opt.validate(t)
+
 	var v T
 	fill(&v, opt)
 
@@ -53,73 +74,95 @@ func MakeWithOption[T any](opt Option) T {
 
 func fill(v any, opt Option) {
 	rv := reflect.ValueOf(v).Elem()
+	rvType := rv.Type()
+	rvKind := rv.Kind()
 
 	for _, f := range opt.CustomFakers {
-		if f.Type == rv.Type() {
-			rv.Set(reflect.ValueOf(f.F()))
+		if f.Type == rvType {
+			value := reflect.ValueOf(f.F())
+			if !value.IsValid() && rvKind == reflect.Interface {
+				rv.SetZero()
+			} else {
+				rv.Set(value)
+			}
 			return
 		}
 	}
 
-	switch rv.Kind() {
-	case reflect.String:
+	switch rvType {
+	case reflect.TypeFor[string]():
 		fillString(rv, opt)
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+	case reflect.TypeFor[int](), reflect.TypeFor[int8](), reflect.TypeFor[int16](), reflect.TypeFor[int32](), reflect.TypeFor[int64]():
 		fillInt(rv)
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+	case reflect.TypeFor[uint](), reflect.TypeFor[uint8](), reflect.TypeFor[uint16](), reflect.TypeFor[uint32](), reflect.TypeFor[uint64](), reflect.TypeFor[uintptr]():
 		fillUint(rv)
-	case reflect.Struct:
-		if rv.Type() == reflect.TypeFor[time.Time]() {
-			fillTime(rv)
-		} else {
-			fillStruct(rv, opt)
-		}
-	case reflect.Bool:
+	case reflect.TypeFor[uuid.UUID]():
+		rv.Set(reflect.ValueOf(uuid.NewV7()))
+	case reflect.TypeFor[time.Time]():
+		fillTime(rv, opt)
+	case reflect.TypeFor[url.URL]():
+		fillURL(rv, opt)
+	case reflect.TypeFor[net.IPNet]():
+		fillIPNet(rv)
+	case reflect.TypeFor[net.IP]():
+		fillIP(rv)
+	case reflect.TypeFor[net.IPMask]():
+		fillIPMask(rv)
+	case reflect.TypeFor[net.HardwareAddr]():
+		fillHardwareAddr(rv)
+	case reflect.TypeFor[bool]():
 		rv.SetBool(true)
-	case reflect.Float64, reflect.Float32:
+	case reflect.TypeFor[error]():
+		rv.Set(reflect.ValueOf(errors.New(randStr(opt.AllowedRunes, opt.StrLen))))
+	case reflect.TypeFor[float64](), reflect.TypeFor[float32]():
 		rv.SetFloat(rand.NormFloat64())
-	case reflect.Complex64, reflect.Complex128:
+	case reflect.TypeFor[complex64](), reflect.TypeFor[complex128]():
 		rv.SetComplex(complex(rand.NormFloat64(), rand.NormFloat64()))
-	case reflect.Slice:
-		fillSlice(rv, opt)
-	case reflect.Array:
-		fillArray(rv, opt)
-	case reflect.Map:
-		fillMap(rv, opt)
-	case reflect.Chan:
-		fillChan(rv, opt)
-	case reflect.Pointer:
-		fillPointer(rv, opt)
+	default:
+		switch rvKind {
+		case reflect.Struct:
+			fillStruct(rv, opt)
+		case reflect.Slice:
+			fillSlice(rv, opt)
+		case reflect.Array:
+			fillArray(rv, opt)
+		case reflect.Map:
+			fillMap(rv, opt)
+		case reflect.Chan:
+			fillChan(rv, opt)
+		case reflect.Pointer:
+			fillPointer(rv, opt)
+		}
 	}
 }
 
 func fillUint(rv reflect.Value) {
 	switch rv.Kind() {
 	case reflect.Uint8:
-		rv.SetUint(rand.Uint64N(math.MaxUint8))
+		rv.SetUint(rand.Uint64N(math.MaxUint8) + 1)
 	case reflect.Uint16:
-		rv.SetUint(rand.Uint64N(math.MaxUint16))
+		rv.SetUint(rand.Uint64N(math.MaxUint16) + 1)
 	case reflect.Uint32:
-		rv.SetUint(rand.Uint64N(math.MaxUint32))
+		rv.SetUint(rand.Uint64N(math.MaxUint32) + 1)
 	case reflect.Uint64:
-		rv.SetUint(rand.Uint64())
+		rv.SetUint(rand.Uint64N(math.MaxUint64) + 1)
 	case reflect.Uint, reflect.Uintptr:
-		rv.SetUint(uint64(rand.Uint()))
+		rv.SetUint(uint64(rand.UintN(math.MaxUint) + 1))
 	}
 }
 
 func fillInt(rv reflect.Value) {
 	switch rv.Kind() {
 	case reflect.Int8:
-		rv.SetInt(rand.Int64N(math.MaxInt8))
+		rv.SetInt(randInRange[int64](1, math.MaxInt8))
 	case reflect.Int16:
-		rv.SetInt(rand.Int64N(math.MaxInt16))
+		rv.SetInt(randInRange[int64](1, math.MaxInt16))
 	case reflect.Int32:
-		rv.SetInt(rand.Int64N(math.MaxInt32))
+		rv.SetInt(randInRange[int64](1, math.MaxInt32))
 	case reflect.Int64:
-		rv.SetInt(rand.Int64N(math.MaxInt64))
+		rv.SetInt(randInRange[int64](1, math.MaxInt64))
 	case reflect.Int:
-		rv.SetInt(rand.Int64N(math.MaxInt))
+		rv.SetInt(randInRange[int64](1, math.MaxInt))
 	}
 }
 
@@ -196,27 +239,5 @@ func fillPointer(rv reflect.Value, opt Option) {
 }
 
 func fillString(rv reflect.Value, opt Option) {
-	r := make([]rune, opt.StrLen)
-
-	for i := range len(r) {
-		index := rand.IntN(len(opt.AllowedRunes))
-		r[i] = opt.AllowedRunes[index]
-	}
-
-	rv.SetString(string(r))
-}
-
-func fillTime(rv reflect.Value) {
-	minUnix := time.Now().AddDate(-yearsForward, 0, 0).Unix()
-	maxUnix := time.Now().AddDate(yearsForward, 0, 0).Unix()
-	sec := minUnix + rand.Int64N(maxUnix-minUnix+1)
-
-	rv.Set(reflect.ValueOf(time.Unix(sec, rand.Int64N(1e9))))
-}
-
-func randLen(opt Option) int {
-	if opt.MaxContainersLen < opt.MinContainersLen {
-		return opt.MinContainersLen
-	}
-	return opt.MinContainersLen + rand.IntN(opt.MaxContainersLen-opt.MinContainersLen+1)
+	rv.SetString(randStr(opt.AllowedRunes, opt.StrLen))
 }

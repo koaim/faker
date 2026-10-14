@@ -2,269 +2,400 @@ package faker
 
 import (
 	"context"
+	"net"
+	"net/url"
 	"slices"
 	"testing"
 	"time"
 	"unicode/utf8"
+	"uuid"
 )
 
-func TestMake(t *testing.T) {
+func TestMake_UUID(t *testing.T) {
 	t.Parallel()
 
-	t.Run("int", func(t *testing.T) {
-		t.Parallel()
+	v := Make[uuid.UUID](t)
 
-		v := Make[int]()
+	defaultUUID := uuid.UUID{}
+
+	if v == defaultUUID {
+		t.Fatal("expected non-default uuid.UUID")
+	}
+	_, err := uuid.Parse(v.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMake_EmptyStruct(t *testing.T) {
+	t.Parallel()
+
+	type User struct{}
+
+	defaultUser := User{}
+
+	u := Make[User](t)
+	if u != defaultUser {
+		t.Fatal("expected zero User value")
+	}
+}
+
+func TestMake_AnonymousStruct(t *testing.T) {
+	t.Parallel()
+
+	u := Make[struct {
+		ID   int
+		Name string
+	}](t)
+
+	defaultUser := struct {
+		ID   int
+		Name string
+	}{}
+
+	if u == defaultUser {
+		t.Fatal("expected non-default Users")
+	}
+}
+
+func TestMake_Int(t *testing.T) {
+	t.Parallel()
+
+	v := Make[int](t)
+	if v == 0 {
+		t.Fatal("expected non-zero int")
+	}
+}
+
+func TestMake_IPMask(t *testing.T) {
+	t.Parallel()
+
+	v := Make[net.IPMask](t)
+	if len(v) == 0 {
+		t.Fatal("expected non-zero net.IPMask")
+	}
+	if _, bits := v.Size(); bits != 32 {
+		t.Fatalf("expected contiguous IPv4 mask, got %v", v)
+	}
+}
+
+func TestMake_HardwareAddr(t *testing.T) {
+	t.Parallel()
+
+	v := Make[net.HardwareAddr](t)
+
+	_, err := net.ParseMAC(v.String())
+
+	if len(v) == 0 {
+		t.Fatal("expected non-zero net.HardwareAddr")
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMake_IP(t *testing.T) {
+	t.Parallel()
+
+	v := Make[net.IP](t)
+
+	ip := net.ParseIP(v.String())
+	if ip == nil {
+		t.Fatalf("expected valid net.IP, got %v", v.String())
+	}
+}
+
+func TestMake_Byte(t *testing.T) {
+	t.Parallel()
+
+	v := Make[byte](t)
+	if v == 0 {
+		t.Fatal("expected non-zero byte")
+	}
+}
+
+func TestMake_URL(t *testing.T) {
+	t.Parallel()
+
+	v := Make[url.URL](t)
+
+	_, err := url.Parse(v.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMake_Uint(t *testing.T) {
+	t.Parallel()
+
+	v := Make[uint](t)
+	if v == 0 {
+		t.Fatal("expected non-zero uint")
+	}
+}
+
+func TestMake_Uintptr(t *testing.T) {
+	t.Parallel()
+
+	v := Make[uintptr](t)
+	if v == 0 {
+		t.Fatal("expected non-zero uintptr")
+	}
+}
+
+func TestMake_Time(t *testing.T) {
+	t.Parallel()
+
+	v := Make[time.Time](t)
+	if v.Equal(time.Time{}) {
+		t.Fatal("expected non-zero time.Time")
+	}
+}
+
+func TestMake_TimePointer(t *testing.T) {
+	t.Parallel()
+
+	v := Make[*time.Time](t)
+	if v == nil {
+		t.Fatal("expected non-nil value")
+	}
+	if v.Equal(time.Time{}) {
+		t.Fatal("expected non-zero time.Time")
+	}
+}
+
+func TestMake_Bool(t *testing.T) {
+	t.Parallel()
+
+	v := Make[bool](t)
+	if v == false {
+		t.Fatal("expected non-zero bool")
+	}
+}
+
+func TestMake_Float64(t *testing.T) {
+	t.Parallel()
+
+	v := Make[float64](t)
+	if v == 0 {
+		t.Fatal("expected non-zero float64")
+	}
+}
+
+func TestMake_Complex64(t *testing.T) {
+	t.Parallel()
+
+	v := Make[complex64](t)
+	if v == 0 {
+		t.Fatal("expected non-zero complex64")
+	}
+}
+
+func TestMake_Slice(t *testing.T) {
+	t.Parallel()
+
+	v := Make[[]int](t)
+	if len(v) < DefaultOption().MinContainersLen || len(v) > DefaultOption().MaxContainersLen {
+		t.Fatalf("expected slice length in range [%d, %d], got %d", DefaultOption().MinContainersLen, DefaultOption().MaxContainersLen, len(v))
+	}
+	for _, v := range v {
 		if v == 0 {
 			t.Fatal("expected non-zero int")
 		}
-	})
+	}
+}
 
-	t.Run("uint", func(t *testing.T) {
-		t.Parallel()
+func TestMake_Map(t *testing.T) {
+	t.Parallel()
 
-		v := Make[uint]()
+	v := Make[map[string]string](t)
+	if len(v) < DefaultOption().MinContainersLen || len(v) > DefaultOption().MaxContainersLen {
+		t.Fatalf("expected map length in range [%d, %d], got %d", DefaultOption().MinContainersLen, DefaultOption().MaxContainersLen, len(v))
+	}
+	for k, v := range v {
+		if k == "" {
+			t.Fatal("expected non-zero string key")
+		}
+		if v == "" {
+			t.Fatal("expected non-zero string value")
+		}
+	}
+}
+
+func TestMake_Array(t *testing.T) {
+	t.Parallel()
+
+	const length = 4
+
+	v := Make[[length]int](t)
+	if len(v) != length {
+		t.Fatalf("expected array length %d, got %d", length, len(v))
+	}
+	if cap(v) != length {
+		t.Fatalf("expected array capacity %d, got %d", length, cap(v))
+	}
+	for _, v := range v {
 		if v == 0 {
-			t.Fatal("expected non-zero uint")
+			t.Fatal("expected non-zero int")
 		}
-	})
+	}
+}
 
-	t.Run("uintptr", func(t *testing.T) {
-		t.Parallel()
+func TestMake_String(t *testing.T) {
+	t.Parallel()
 
-		v := Make[uintptr]()
-		if v == 0 {
-			t.Fatal("expected non-zero uintptr")
+	v := Make[string](t)
+	if utf8.RuneCountInString(v) != DefaultOption().StrLen {
+		t.Fatalf("expected string length %d, got %d", DefaultOption().StrLen, len(v))
+	}
+	for _, v := range v {
+		if !slices.Contains(DefaultOption().AllowedRunes, v) {
+			t.Fatalf("rune %q is not in the alphabet", v)
 		}
-	})
+	}
+}
 
-	t.Run("time", func(t *testing.T) {
-		t.Parallel()
+func TestMake_Chan(t *testing.T) {
+	t.Parallel()
 
-		v := Make[time.Time]()
+	v := Make[chan int](t)
+	if len(v) == 0 {
+		t.Fatal("expected non-empty chan")
+	}
+}
 
-		if v.Equal(time.Time{}) {
-			t.Fatal("expected non-zero time.Time")
-		}
-	})
+func TestMake_Error(t *testing.T) {
+	t.Parallel()
 
-	t.Run("pointer", func(t *testing.T) {
-		t.Parallel()
+	v := Make[error](t)
 
-		v := Make[*time.Time]()
+	if v == nil {
+		t.Fatal("expected non-nil error")
+	}
+}
 
-		if v == nil {
-			t.Fatal("expected non-nil value")
-		}
-		if v.Equal(time.Time{}) {
-			t.Fatal("expected non-zero time.Time")
-		}
-	})
+func TestMake_Struct(t *testing.T) {
+	t.Parallel()
 
-	t.Run("bool", func(t *testing.T) {
-		t.Parallel()
+	type Order[T any] struct {
+		ID        int64
+		Name      string
+		DeletedAt *time.Time
+		Type      T
+	}
 
-		v := Make[bool]()
-		if v == false {
-			t.Fatal("expected non-zero bool")
-		}
-	})
+	type User struct {
+		ID        int
+		Name      string
+		Order     *Order[string]
+		CreatedAt time.Time
+	}
 
-	t.Run("float64", func(t *testing.T) {
-		t.Parallel()
+	defaultUser := User{}
+	defaultOrder := Order[string]{}
 
-		v := Make[float64]()
-		if v == 0 {
-			t.Fatal("expected non-zero float46")
-		}
-	})
+	u := Make[User](t)
+	if u == defaultUser {
+		t.Fatal("expected non-default User value")
+	}
+	if u.Order == nil || *u.Order == defaultOrder {
+		t.Fatal("expected non-nil and non-empty Order value")
+	}
+}
 
-	t.Run("complex64", func(t *testing.T) {
-		t.Parallel()
+func TestMake_Struct_NotSupportedTypes(t *testing.T) {
+	t.Parallel()
 
-		v := Make[complex64]()
-		if v == 0 {
-			t.Fatal("expected non-zero complex64")
-		}
-	})
+	type User struct {
+		Ctx     context.Context
+		Any     any
+		F       func()
+		private int
+	}
 
-	t.Run("slice", func(t *testing.T) {
-		t.Parallel()
+	u := Make[User](t)
 
-		v := Make[[]int]()
-		if len(v) < DefaultOption().MinContainersLen || len(v) > DefaultOption().MaxContainersLen {
-			t.Fatalf("expected slice length in range [%d, %d], got %d", DefaultOption().MinContainersLen, DefaultOption().MaxContainersLen, len(v))
-		}
-		for _, v := range v {
-			if v == 0 {
-				t.Fatal("expected non-zero int")
-			}
-		}
-	})
+	if u.Ctx != nil {
+		t.Fatalf("expected nil u.Ctx, got %v", u.Ctx)
+	}
+	if u.Any != nil {
+		t.Fatalf("expected nil u.Any, got %v", u.Any)
+	}
+	if u.F != nil {
+		t.Fatalf("expected nil u.F")
+	}
+	if u.private != 0 {
+		t.Fatal("expected zero u.private")
+	}
+}
 
-	t.Run("map", func(t *testing.T) {
-		t.Parallel()
+func TestMake_Struct_CustomFakers(t *testing.T) {
+	t.Parallel()
 
-		v := Make[map[string]string]()
-		if len(v) < DefaultOption().MinContainersLen || len(v) > DefaultOption().MaxContainersLen {
-			t.Fatalf("expected map length in range [%d, %d], got %d", DefaultOption().MinContainersLen, DefaultOption().MaxContainersLen, len(v))
-		}
-		for k, v := range v {
-			if k == "" {
-				t.Fatal("expected non-zero string key")
-			}
-			if v == "" {
-				t.Fatal("expected non-zero string value")
-			}
-		}
-	})
+	const (
+		strVal = "string"
+		intVal = 11
+	)
 
-	t.Run("array", func(t *testing.T) {
-		t.Parallel()
+	type User struct {
+		ID   int
+		Age  *int
+		Name string
+		City *string
+	}
 
-		const length = 4
+	u := Make[User](t,
+		WithCustomFaker(func() string { return strVal }),
+		WithCustomFaker(func() int { return intVal }),
+	)
 
-		v := Make[[length]int]()
-		if len(v) != length {
-			t.Fatalf("expected array length %d, got %d", length, len(v))
-		}
-		if cap(v) != length {
-			t.Fatalf("expected array length %d, got %d", length, cap(v))
-		}
-	})
+	if u.ID != intVal {
+		t.Fatalf("expected ID = %v, actual = %v", intVal, u.ID)
+	}
+	if *u.Age != intVal {
+		t.Fatalf("expected Age = %v, actual = %v", intVal, *u.Age)
+	}
+	if u.Name != strVal {
+		t.Fatalf("expected Name = %v, actual = %v", strVal, u.Name)
+	}
+	if *u.City != strVal {
+		t.Fatalf("expected City = %v, actual = %v", strVal, *u.City)
+	}
+}
 
-	t.Run("string", func(t *testing.T) {
-		t.Parallel()
+func TestMake_CustomFaker_Nil(t *testing.T) {
+	t.Parallel()
 
-		v := Make[string]()
-		if utf8.RuneCountInString(v) != DefaultOption().StrLen {
-			t.Fatalf("expected string length %d, got %d", DefaultOption().StrLen, len(v))
-		}
-		for _, v := range v {
-			if !slices.Contains(DefaultOption().AllowedRunes, v) {
-				t.Fatalf("rune %q is not in the alphabet", v)
-			}
-		}
-	})
-
-	t.Run("chan", func(t *testing.T) {
-		t.Parallel()
-
-		v := Make[chan int]()
-		if len(v) == 0 {
-			t.Fatal("expected non-empty chan")
-		}
-	})
-
-	t.Run("struct", func(t *testing.T) {
-		t.Parallel()
-
-		type Order[T any] struct {
-			ID        int64
-			Name      string
-			DeletedAt *time.Time
-			Type      T
-		}
-
-		type User struct {
-			ID        int
-			Name      string
-			Order     *Order[string]
-			CreatedAt time.Time
-		}
-
-		defaultUser := User{}
-		defaultOrder := Order[string]{}
-
-		u := Make[User]()
-		if u == defaultUser {
-			t.Fatal("expected non-zero User value")
-		}
-		if u.Order == nil || *u.Order == defaultOrder {
-			t.Fatal("expected non-nil and non-empty Order value")
-		}
-	})
-
-	t.Run("struct with not supported types", func(t *testing.T) {
-		t.Parallel()
-
-		type User struct {
-			Ctx context.Context
-			Any any
-			Err error
-			F   func()
-		}
-
-		u := Make[User]()
-
-		if u.Ctx != nil {
-			t.Fatalf("expected nil Ctx, got %v", u.Ctx)
-		}
-		if u.Any != nil {
-			t.Fatalf("expected nil Any, got %v", u.Any)
-		}
-		if u.Err != nil {
-			t.Fatalf("expected nil Err, got %v", u.Err)
-		}
-		if u.F != nil {
-			t.Fatalf("expected nil F")
-		}
-	})
-
-	t.Run("struct with custom fakers", func(t *testing.T) {
-		t.Parallel()
-
-		const (
-			strVal = "string"
-			intVal = 11
-		)
-
-		type User struct {
-			ID   int
-			Age  int
-			Name string
-			City string
-		}
-
-		u := Make[User](
-			WithCustomFaker(func() string {
-				return strVal
-			}),
-			WithCustomFaker(func() int {
-				return intVal
-			}),
-		)
-
-		if u.ID != intVal {
-			t.Fatalf("expected ID = %v, actual = %v", intVal, u.ID)
-		}
-		if u.Age != intVal {
-			t.Fatalf("expected Age = %v, actual = %v", intVal, u.Age)
-		}
-		if u.Name != strVal {
-			t.Fatalf("expected Age = %v, actual = %v", intVal, u.Name)
-		}
-		if u.City != strVal {
-			t.Fatalf("expected Age = %v, actual = %v", intVal, u.City)
-		}
-	})
+	if v := Make[any](t, WithCustomFaker(func() any { return nil })); v != nil {
+		t.Fatalf("expected nil interface, got %v", v)
+	}
+	if v := Make[error](t, WithCustomFaker(func() error { return nil })); v != nil {
+		t.Fatalf("expected nil error, got %v", v)
+	}
+	if v := Make[*int](t, WithCustomFaker(func() *int { return nil })); v != nil {
+		t.Fatalf("expected nil pointer, got %v", v)
+	}
 }
 
 func TestMakeAndOverride(t *testing.T) {
 	t.Parallel()
 
-	const customName = "custom name"
+	const (
+		customName = "custom name"
+		customID   = 10
+	)
 
 	type User struct {
 		ID   int
 		Name string
 	}
 
+	withCustomName := func(u *User) { u.Name = customName }
+	withCustomID := func(u *User) { u.ID = customID }
+
 	defaultUser := User{}
 
-	u := MakeAndOverride(func(v *User) {
-		v.Name = customName
-	})
+	u := MakeAndOverride(withCustomName, withCustomID)
 
 	if u == defaultUser {
 		t.Fatal("expected not default value")
@@ -272,6 +403,80 @@ func TestMakeAndOverride(t *testing.T) {
 	if u.Name != customName {
 		t.Fatalf("expected Name = %v, actual = %v", customName, u.Name)
 	}
+	if u.ID != customID {
+		t.Fatalf("expected ID = %v, actual = %v", customID, u.ID)
+	}
+}
+
+func TestOption_ContainersLenValidation(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name string
+		min  int
+		max  int
+	}{
+		{name: "negative minimum", min: -1, max: 3},
+		{name: "zero minimum", min: 0, max: 3},
+		{name: "both zero", min: 0, max: 0},
+		{name: "maximum below minimum", min: 1, max: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			opt := DefaultOption()
+			opt.MinContainersLen = tc.min
+			opt.MaxContainersLen = tc.max
+			if err := opt.validationError(); err == nil {
+				t.Fatal("expected validation error")
+			}
+		})
+	}
+
+	t.Run("minimum one", func(t *testing.T) {
+		t.Parallel()
+
+		type Containers struct {
+			Slice []int
+			Map   map[int]int
+			Chan  chan int
+		}
+		v := Make[Containers](t, WithContainersLen(1, 1))
+		if len(v.Slice) != 1 || len(v.Map) != 1 || len(v.Chan) != 1 || cap(v.Chan) != 1 {
+			t.Fatalf("expected containers of length 1, got slice=%d, map=%d, channel=%d (capacity=%d)", len(v.Slice), len(v.Map), len(v.Chan), cap(v.Chan))
+		}
+	})
+}
+
+func TestOption_StrLenValidation(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name   string
+		length int
+	}{
+		{name: "negative length", length: -1},
+		{name: "zero length", length: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			opt := DefaultOption()
+			opt.StrLen = tc.length
+			if err := opt.validationError(); err == nil {
+				t.Fatal("expected validation error")
+			}
+		})
+	}
+
+	t.Run("minimum one", func(t *testing.T) {
+		t.Parallel()
+
+		v := Make[string](t, WithStrLen(1), WithAllowedRunes([]rune("я")))
+		if v != "я" {
+			t.Fatalf("expected one rune %q, got %q", "я", v)
+		}
+	})
 }
 
 func TestMakeWithOption(t *testing.T) {
@@ -291,7 +496,7 @@ func TestMakeWithOption(t *testing.T) {
 		opt := DefaultOption()
 		opt.CloseChannels = true
 
-		u := MakeWithOption[User](opt)
+		u := MakeWithOption[User](t, opt)
 
 		for range u.Ch {
 		}
@@ -307,7 +512,7 @@ func TestMakeWithOption(t *testing.T) {
 		opt := DefaultOption()
 		opt.AllowedRunes = []rune("123abc")
 
-		u := MakeWithOption[User](opt)
+		u := MakeWithOption[User](t, opt)
 
 		for _, v := range u.Name {
 			if !slices.Contains(opt.AllowedRunes, v) {
@@ -322,7 +527,7 @@ func TestMakeWithOption(t *testing.T) {
 		opt := DefaultOption()
 		opt.StrLen = 3
 
-		u := MakeWithOption[User](opt)
+		u := MakeWithOption[User](t, opt)
 
 		if utf8.RuneCountInString(u.Name) != opt.StrLen {
 			t.Fatalf("expected string length %v, got %v", opt.StrLen, utf8.RuneCountInString(u.Name))
@@ -336,9 +541,9 @@ func TestMakeWithOption(t *testing.T) {
 		opt.MinContainersLen = 10
 		opt.MaxContainersLen = 15
 
-		u := MakeWithOption[User](opt)
+		u := MakeWithOption[User](t, opt)
 		if len(u.Numbers) < opt.MinContainersLen || len(u.Numbers) > opt.MaxContainersLen {
-			t.Fatalf("expected slice length in range [%d, %d], got %d", DefaultOption().MinContainersLen, DefaultOption().MaxContainersLen, len(u.Numbers))
+			t.Fatalf("expected slice length in range [%d, %d], got %d", opt.MinContainersLen, opt.MaxContainersLen, len(u.Numbers))
 		}
 	})
 
@@ -348,7 +553,7 @@ func TestMakeWithOption(t *testing.T) {
 		opt := DefaultOption()
 		opt.IgnoreFields = []string{"Skip1", "Skip2"}
 
-		u := MakeWithOption[User](opt)
+		u := MakeWithOption[User](t, opt)
 		if u.Skip1 != "" {
 			t.Fatalf("expected default string value, got %v", u.Skip1)
 		}
