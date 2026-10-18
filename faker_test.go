@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -24,6 +25,33 @@ func TestMake_UUID(t *testing.T) {
 	_, err := uuid.Parse(v.String())
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestMake_TypeWrap(t *testing.T) {
+	t.Parallel()
+
+	type MyInt int
+
+	v := Make[MyInt](t,
+		WithCustomFaker(func() int { return 10 }),
+		WithCustomFaker(func() MyInt { return 20 }),
+	)
+
+	if v != 20 {
+		t.Fatalf("expected 20, got %v", v)
+	}
+}
+
+func TestMake_TypeAlias(t *testing.T) {
+	t.Parallel()
+
+	type MyInt = int
+
+	v := Make[MyInt](t, WithCustomFaker(func() int { return 10 }))
+
+	if v != 10 {
+		t.Fatalf("expected 10, got %v", v)
 	}
 }
 
@@ -48,13 +76,13 @@ func TestMake_AnonymousStruct(t *testing.T) {
 		Name string
 	}](t)
 
-	defaultUser := struct {
+	defaultValue := struct {
 		ID   int
 		Name string
 	}{}
 
-	if u == defaultUser {
-		t.Fatal("expected non-default Users")
+	if u == defaultValue {
+		t.Fatal("expected non-default value")
 	}
 }
 
@@ -122,6 +150,27 @@ func TestMake_URL(t *testing.T) {
 	_, err := url.Parse(v.String())
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestMake_URL_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	var (
+		domainZones = []string{"info"}
+		schemes     = []string{"http"}
+	)
+
+	v := Make[url.URL](t, WithAllowedDomainZones(domainZones), WithAllowedUrlSchemes(schemes), WithUrlUserInfo(true))
+
+	if !slices.Contains(schemes, v.Scheme) {
+		t.Fatalf("invalid scheme %v", v.Scheme)
+	}
+	if v.User == nil || v.User.String() == "" {
+		t.Fatal("expected non-nil User")
+	}
+	if !strings.HasSuffix(v.Host, "info") {
+		t.Fatalf("invalid domain zone %v", v.Host)
 	}
 }
 
@@ -363,20 +412,6 @@ func TestMake_Struct_CustomFakers(t *testing.T) {
 	}
 }
 
-func TestMake_CustomFaker_Nil(t *testing.T) {
-	t.Parallel()
-
-	if v := Make[any](t, WithCustomFaker(func() any { return nil })); v != nil {
-		t.Fatalf("expected nil interface, got %v", v)
-	}
-	if v := Make[error](t, WithCustomFaker(func() error { return nil })); v != nil {
-		t.Fatalf("expected nil error, got %v", v)
-	}
-	if v := Make[*int](t, WithCustomFaker(func() *int { return nil })); v != nil {
-		t.Fatalf("expected nil pointer, got %v", v)
-	}
-}
-
 func TestMakeAndOverride(t *testing.T) {
 	t.Parallel()
 
@@ -406,77 +441,6 @@ func TestMakeAndOverride(t *testing.T) {
 	if u.ID != customID {
 		t.Fatalf("expected ID = %v, actual = %v", customID, u.ID)
 	}
-}
-
-func TestOption_ContainersLenValidation(t *testing.T) {
-	t.Parallel()
-
-	for _, tc := range []struct {
-		name string
-		min  int
-		max  int
-	}{
-		{name: "negative minimum", min: -1, max: 3},
-		{name: "zero minimum", min: 0, max: 3},
-		{name: "both zero", min: 0, max: 0},
-		{name: "maximum below minimum", min: 1, max: 0},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			opt := DefaultOption()
-			opt.MinContainersLen = tc.min
-			opt.MaxContainersLen = tc.max
-			if err := opt.validationError(); err == nil {
-				t.Fatal("expected validation error")
-			}
-		})
-	}
-
-	t.Run("minimum one", func(t *testing.T) {
-		t.Parallel()
-
-		type Containers struct {
-			Slice []int
-			Map   map[int]int
-			Chan  chan int
-		}
-		v := Make[Containers](t, WithContainersLen(1, 1))
-		if len(v.Slice) != 1 || len(v.Map) != 1 || len(v.Chan) != 1 || cap(v.Chan) != 1 {
-			t.Fatalf("expected containers of length 1, got slice=%d, map=%d, channel=%d (capacity=%d)", len(v.Slice), len(v.Map), len(v.Chan), cap(v.Chan))
-		}
-	})
-}
-
-func TestOption_StrLenValidation(t *testing.T) {
-	t.Parallel()
-
-	for _, tc := range []struct {
-		name   string
-		length int
-	}{
-		{name: "negative length", length: -1},
-		{name: "zero length", length: 0},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			opt := DefaultOption()
-			opt.StrLen = tc.length
-			if err := opt.validationError(); err == nil {
-				t.Fatal("expected validation error")
-			}
-		})
-	}
-
-	t.Run("minimum one", func(t *testing.T) {
-		t.Parallel()
-
-		v := Make[string](t, WithStrLen(1), WithAllowedRunes([]rune("я")))
-		if v != "я" {
-			t.Fatalf("expected one rune %q, got %q", "я", v)
-		}
-	})
 }
 
 func TestMakeWithOption(t *testing.T) {

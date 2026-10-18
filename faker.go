@@ -28,7 +28,7 @@ import (
 // Recursively fills structs, slices, arrays, maps, buffered bidirectional
 // channels, and pointers (non-nil by default). Skips fields in IgnoreFields
 // or that cannot be set.
-func Make[T any](t *testing.T, opts ...OptionF) T {
+func Make[T any](t *testing.T, opts ...OptionFunc) T {
 	t.Helper()
 
 	o := DefaultOption()
