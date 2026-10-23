@@ -67,6 +67,27 @@ func TestUser(t *testing.T) {
 	)
 }
 ```
+## Options
+
+Default values returned by `DefaultOption()`:
+
+| Field | Description | Default value |
+| --- | --- | --- |
+| `MinContainersLen` | Minimum requested length of slices, maps, and channels. Map key collisions may reduce the resulting map length. | `1` |
+| `MaxContainersLen` | Maximum length of slices, maps, and channels. | `3` |
+| `StrLen` | Length of generated strings in runes. | `6` |
+| `AllowedRunes` | Characters used to generate random strings. | `[]rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789123456789")` |
+| `IgnoreFields` | Names of struct fields to skip. | `nil` |
+| `CloseChannels` | Whether to close generated channels after filling them. | `false` |
+| `CustomFakers` | Custom generators matched by exact type, overriding default generation. | `nil` |
+| `Url.QueryCount` | Number of query parameters to generate for URLs. | `2` |
+| `Url.WithUserInfo` | Whether generated URLs include a username and password. | `true` |
+| `Url.AllowedDomainZones` | Domain zones used for URL hosts. | `[]string{"com", "net", "org", "en", "site"}` |
+| `Url.AllowedSchemes` | Schemes used for generated URLs. | `[]string{"http", "https"}` |
+| `Url.PathLen` | Length of the generated URL path in runes. | `3` |
+| `Time.YearsBack` | Number of calendar years before now included in the time range. | `200` |
+| `Time.YearsForward` | Number of calendar years after now included in the time range. | `200` |
+
 ## License
 
 [MIT](LICENSE)

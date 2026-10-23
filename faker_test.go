@@ -511,6 +511,6 @@ func TestMakeWithOption_IgnoreFields(t *testing.T) {
 	v := MakeWithOption[Struct](t, opt)
 
 	if v != defaultStruct {
-		t.Fatalf("expected default Struct, got %v", v)
+		t.Fatalf("expected default Struct, got %+v", v)
 	}
 }
