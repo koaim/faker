@@ -28,7 +28,7 @@ import (
 // Recursively fills structs, slices, arrays, maps, buffered bidirectional
 // channels, and pointers (non-nil by default). Skips fields in IgnoreFields
 // or that cannot be set.
-func Make[T any](t *testing.T, opts ...OptionF) T {
+func Make[T any](t *testing.T, opts ...OptionFunc) T {
 	t.Helper()
 
 	o := DefaultOption()
@@ -43,10 +43,10 @@ func Make[T any](t *testing.T, opts ...OptionF) T {
 	return v
 }
 
-// MakeAndOverride generates a value with default options, then applies funcs
+// MakeWithOverrides generates a value with default options, then applies funcs
 // in order before returning the value. Each function receives a pointer
 // to the value and can modify any part of it.
-func MakeAndOverride[T any](funcs ...func(v *T)) T {
+func MakeWithOverrides[T any](funcs ...func(v *T)) T {
 	o := DefaultOption()
 
 	var v T

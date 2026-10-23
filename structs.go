@@ -11,8 +11,8 @@ import (
 
 func fillURL(rv reflect.Value, opt Option) {
 	u := url.URL{
-		Scheme: randIn(opt.Url.AvailableSchemes...),
-		Host:   randStr(opt.AllowedRunes, opt.StrLen) + "." + randIn(opt.Url.AvailableDomainZones...),
+		Scheme: randIn(opt.Url.AllowedSchemes...),
+		Host:   randStr(opt.AllowedRunes, opt.StrLen) + "." + randIn(opt.Url.AllowedDomainZones...),
 		Path:   randStr(opt.AllowedRunes, opt.Url.PathLen),
 	}
 

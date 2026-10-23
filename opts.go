@@ -12,13 +12,12 @@ import (
 )
 
 const (
-	minContainersLen = 1
-	maxContainersLen = 3
-	strLen           = 6
-	timeYearsBack    = 200
-	timeYearsForward = 200
-	// A conservative limit keeps the inclusive Unix-second range within int64.
-	maxTimeYears int64 = math.MaxInt64 / (366 * 24 * 60 * 60)
+	minContainersLen       = 1
+	maxContainersLen       = 3
+	strLen                 = 6
+	timeYearsBack          = 200
+	timeYearsForward       = 200
+	maxTimeYears     int64 = math.MaxInt64 / (366 * 24 * 60 * 60)
 
 	urlQueryCount   = 2
 	urlWithUserInfo = true
@@ -26,12 +25,9 @@ const (
 )
 
 var (
-	availableDomainZones = []string{"com", "net", "org", "en", "site"}
-	availableUrlSchemes  = []string{"http", "https"}
-)
-
-var (
-	allowedRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789123456789")
+	allowedDomainZones = []string{"com", "net", "org", "en", "site"}
+	allowedUrlSchemes  = []string{"http", "https"}
+	allowedRunes       = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789123456789")
 )
 
 // Custom describes a user-defined generator for values of a specific type.
@@ -42,8 +38,8 @@ type Custom struct {
 	F func() any
 }
 
-// OptionF is a functional option that configures an Option.
-type OptionF func(o *Option)
+// OptionFunc is a functional option that configures an Option.
+type OptionFunc func(o *Option)
 
 // Option holds the settings used when generating random values.
 type Option struct {
@@ -139,18 +135,24 @@ func (o Option) validationError() error {
 		errs = append(errs, fmt.Errorf("Url.PathLen must be non-negative"))
 	}
 
-	if len(o.Url.AvailableDomainZones) == 0 {
+	if len(o.Url.AllowedDomainZones) == 0 {
 		errs = append(errs, fmt.Errorf("Url.AvailableDomainZones must not be empty"))
 	}
 
-	for i, zone := range o.Url.AvailableDomainZones {
+	for i, zone := range o.Url.AllowedDomainZones {
 		if strings.TrimSpace(zone) == "" {
 			errs = append(errs, fmt.Errorf("Url.AvailableDomainZones[%d] must not be empty", i))
 		}
 	}
 
-	if len(o.Url.AvailableSchemes) == 0 {
+	if len(o.Url.AllowedSchemes) == 0 {
 		errs = append(errs, fmt.Errorf("Url.AvailableSchemes must not be empty"))
+	}
+
+	for i, scheme := range o.Url.AllowedSchemes {
+		if strings.TrimSpace(scheme) == "" {
+			errs = append(errs, fmt.Errorf("Url.AllowedSchemes[%d] must not be empty", i))
+		}
 	}
 
 	return errors.Join(errs...)
@@ -162,10 +164,10 @@ type UrlOption struct {
 	QueryCount int
 	// WithUserInfo reports whether generated URLs include user info (login and password).
 	WithUserInfo bool
-	// AvailableDomainZones lists the domain zones used to build URL hosts.
-	AvailableDomainZones []string
-	// AvailableSchemes lists the URL schemes used when generating URLs.
-	AvailableSchemes []string
+	// AllowedDomainZones lists the domain zones used to build URL hosts.
+	AllowedDomainZones []string
+	// AllowedSchemes lists the URL schemes used when generating URLs.
+	AllowedSchemes []string
 	// PathLen is the length of the generated URL path in runes.
 	PathLen int
 }
@@ -192,34 +194,69 @@ func DefaultOption() Option {
 			YearsForward: timeYearsForward,
 		},
 		Url: UrlOption{
-			QueryCount:           urlQueryCount,
-			WithUserInfo:         urlWithUserInfo,
-			AvailableDomainZones: slices.Clone(availableDomainZones),
-			AvailableSchemes:     slices.Clone(availableUrlSchemes),
-			PathLen:              pathLen,
+			QueryCount:         urlQueryCount,
+			WithUserInfo:       urlWithUserInfo,
+			AllowedDomainZones: slices.Clone(allowedDomainZones),
+			AllowedSchemes:     slices.Clone(allowedUrlSchemes),
+			PathLen:            pathLen,
 		},
 	}
 }
 
-// WithIgnoreFields returns an OptionF that adds the given fields to the
+// WithIgnoreFields adds the given fields to the
 // list of struct fields to skip when generating values.
-func WithIgnoreFields(fields ...string) OptionF {
+func WithIgnoreFields(fields ...string) OptionFunc {
 	return func(o *Option) {
 		o.IgnoreFields = append(o.IgnoreFields, fields...)
 	}
 }
 
-// WithAllowedRunes returns an OptionF that overrides the runes used when
-// generating random strings.
-func WithAllowedRunes(r []rune) OptionF {
+// WithAllowedRunes sets the runes used when generating random strings.
+func WithAllowedRunes(r []rune) OptionFunc {
 	return func(o *Option) {
 		o.AllowedRunes = r
 	}
 }
 
-// WithContainersLen returns an OptionF that sets the min and max length of
+// WithAllowedDomainZones sets the domain zones used to build URL hosts.
+func WithAllowedDomainZones(z []string) OptionFunc {
+	return func(o *Option) {
+		o.Url.AllowedDomainZones = z
+	}
+}
+
+// WithAllowedUrlSchemes sets the schemes used when generating URLs.
+func WithAllowedUrlSchemes(s []string) OptionFunc {
+	return func(o *Option) {
+		o.Url.AllowedSchemes = s
+	}
+}
+
+// WithUrlUserInfo sets whether generated URLs include
+// user info (login and password).
+func WithUrlUserInfo(val bool) OptionFunc {
+	return func(o *Option) {
+		o.Url.WithUserInfo = val
+	}
+}
+
+// WithUrlQueryCount sets the number of query parameters to add to generated URLs.
+func WithUrlQueryCount(c int) OptionFunc {
+	return func(o *Option) {
+		o.Url.QueryCount = c
+	}
+}
+
+// WithUrlPathLen sets the length of generated URL paths in runes.
+func WithUrlPathLen(l int) OptionFunc {
+	return func(o *Option) {
+		o.Url.PathLen = l
+	}
+}
+
+// WithContainersLen sets the min and max length of
 // slices, maps, and channels. The bounds must satisfy 1 <= min <= max.
-func WithContainersLen(min, max uint) OptionF {
+func WithContainersLen(min, max uint) OptionFunc {
 	return func(o *Option) {
 		o.MinContainersLen = int(min)
 		o.MaxContainersLen = int(max)
@@ -227,46 +264,45 @@ func WithContainersLen(min, max uint) OptionF {
 }
 
 // WithStrLen sets the length of generated strings in runes. l must be at least 1.
-func WithStrLen(l uint) OptionF {
+func WithStrLen(l uint) OptionFunc {
 	return func(o *Option) {
 		o.StrLen = int(l)
 	}
 }
 
-// WithCloseChannels returns an OptionF that enables closing generated
-// channels.
-func WithCloseChannels() OptionF {
+// WithCloseChannels enables closing generated channels.
+func WithCloseChannels() OptionFunc {
 	return func(o *Option) {
 		o.CloseChannels = true
 	}
 }
 
 // WithTimeYearsBack sets the non-negative number of calendar years before now.
-func WithTimeYearsBack(years int) OptionF {
+func WithTimeYearsBack(years int) OptionFunc {
 	return func(o *Option) {
 		o.Time.YearsBack = years
 	}
 }
 
 // WithTimeYearsForward sets the non-negative number of calendar years after now.
-func WithTimeYearsForward(years int) OptionF {
+func WithTimeYearsForward(years int) OptionFunc {
 	return func(o *Option) {
 		o.Time.YearsForward = years
 	}
 }
 
-// WithCustomFaker returns an OptionF that appends a Custom generator for
+// WithBuilder appends a Custom generator for
 // values of type T. When a value of that exact type is generated, f is
 // called and its result is used instead of the default generation rules.
-func WithCustomFaker[T any](f func() T) OptionF {
+func WithBuilder[T any](f func() T) OptionFunc {
 	return func(o *Option) {
-		var generator func() any
-		if f != nil {
-			generator = func() any { return f() }
+		if f == nil {
+			return
 		}
+
 		o.CustomFakers = append(o.CustomFakers, Custom{
 			Type: reflect.TypeFor[T](),
-			F:    generator,
+			F:    func() any { return f() },
 		})
 	}
 }
