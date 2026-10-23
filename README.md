@@ -24,6 +24,8 @@ This library focuses on that single use case: generating random values and popul
 - Special generators for `time.Time`, `uuid.UUID`, `url.URL`, `net.IP`, `net.IPNet`, `net.IPMask`, `net.HardwareAddr`, and `error`
 - Custom generators matched by exact type
 
+**Warning:** Do not use this library with recursive types (such as trees, graphs, or linked lists). Generation has no recursion limit or cycle detection and can recurse indefinitely, causing a stack overflow.
+
 ## Usage
 
 ```go
