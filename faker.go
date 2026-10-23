@@ -43,10 +43,10 @@ func Make[T any](t *testing.T, opts ...OptionFunc) T {
 	return v
 }
 
-// MakeAndOverride generates a value with default options, then applies funcs
+// MakeWithOverrides generates a value with default options, then applies funcs
 // in order before returning the value. Each function receives a pointer
 // to the value and can modify any part of it.
-func MakeAndOverride[T any](funcs ...func(v *T)) T {
+func MakeWithOverrides[T any](funcs ...func(v *T)) T {
 	o := DefaultOption()
 
 	var v T

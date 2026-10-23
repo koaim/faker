@@ -46,8 +46,8 @@ func TestUser(t *testing.T) {
 	// Generate a value using the default options.
 	u := faker.Make[User](t)
 
-	// Apply override after generating the value.
-	u = faker.MakeAndOverride(func(v *User) {
+	// Apply overrides after generating the value.
+	u = faker.MakeWithOverrides(func(v *User) {
 		v.Email = "test@example.com"
 	})
 
@@ -60,7 +60,7 @@ func TestUser(t *testing.T) {
 
 	// Override generation for an exact type, including nested fields.
 	u = faker.Make[User](t,
-		faker.WithCustomFaker(func() int { return 42 }),
+		faker.WithBuilder(func() int { return 42 }),
 	)
 }
 ```

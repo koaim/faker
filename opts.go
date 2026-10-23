@@ -291,10 +291,10 @@ func WithTimeYearsForward(years int) OptionFunc {
 	}
 }
 
-// WithCustomFaker appends a Custom generator for
+// WithBuilder appends a Custom generator for
 // values of type T. When a value of that exact type is generated, f is
 // called and its result is used instead of the default generation rules.
-func WithCustomFaker[T any](f func() T) OptionFunc {
+func WithBuilder[T any](f func() T) OptionFunc {
 	return func(o *Option) {
 		if f == nil {
 			return
