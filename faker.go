@@ -201,7 +201,7 @@ func fillMap(rv reflect.Value, opt Option) {
 	kType := rv.Type().Key()
 	vType := rv.Type().Elem()
 
-	for range length {
+	for rv.Len() != length {
 		k := reflect.New(kType).Elem()
 		v := reflect.New(vType).Elem()
 
