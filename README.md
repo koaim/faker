@@ -22,7 +22,7 @@ This library focuses on that single use case: generating random values and popul
 - Generic helpers for generating values and applying overrides
 - Supports built-in signed and unsigned integers (including `byte`, `rune`, and `uintptr`), floats, complex numbers, strings, and booleans
 - Recursively fills structs, slices, arrays, maps, buffered bidirectional channels, and pointers
-- Special generators for `time.Time`, `uuid.UUID`, `url.URL`, `net.IP`, `net.IPNet`, `net.IPMask`, `net.HardwareAddr`, and `error`
+- Special generators for `time.Time`, `uuid.UUID`, `url.URL`, `net.IP`, `net.IPNet`, `net.IPMask`, `net.HardwareAddr` and `error`
 - Custom generators matched by exact type
 
 **Warning:** Do not use this library with recursive types (such as trees, graphs, or linked lists). Generation has no recursion limit or cycle detection and can recurse indefinitely, causing a stack overflow.
@@ -73,20 +73,20 @@ Default values returned by `DefaultOption()`:
 
 | Field | Description | Default value |
 | --- | --- | --- |
-| `MinContainersLen` | Minimum requested length of slices, maps, and channels. Map key collisions may reduce the resulting map length. | `1` |
-| `MaxContainersLen` | Maximum length of slices, maps, and channels. | `3` |
-| `StrLen` | Length of generated strings in runes. | `6` |
-| `AllowedRunes` | Characters used to generate random strings. | `[]rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789123456789")` |
-| `IgnoreFields` | Names of struct fields to skip. | `nil` |
-| `CloseChannels` | Whether to close generated channels after filling them. | `false` |
-| `CustomFakers` | Custom generators matched by exact type, overriding default generation. | `nil` |
-| `Url.QueryCount` | Number of query parameters to generate for URLs. | `2` |
-| `Url.WithUserInfo` | Whether generated URLs include a username and password. | `true` |
-| `Url.AllowedDomainZones` | Domain zones used for URL hosts. | `[]string{"com", "net", "org", "en", "site"}` |
-| `Url.AllowedSchemes` | Schemes used for generated URLs. | `[]string{"http", "https"}` |
-| `Url.PathLen` | Length of the generated URL path in runes. | `3` |
-| `Time.YearsBack` | Number of calendar years before now included in the time range. | `200` |
-| `Time.YearsForward` | Number of calendar years after now included in the time range. | `200` |
+| `MinContainersLen` | Minimum requested length of slices, maps, and channels | `1` |
+| `MaxContainersLen` | Maximum length of slices, maps, and channels | `3` |
+| `StrLen` | Length of generated strings in runes | `6` |
+| `AllowedRunes` | Characters used to generate random strings | `[]rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789123456789")` |
+| `IgnoreFields` | Names of struct fields to skip | `nil` |
+| `CloseChannels` | Whether to close generated channels after filling them | `false` |
+| `CustomFakers` | Custom generators matched by exact type, overriding default generation | `nil` |
+| `Url.QueryCount` | Number of query parameters to generate for URLs | `2` |
+| `Url.WithUserInfo` | Whether generated URLs include a username and password | `true` |
+| `Url.AllowedDomainZones` | Domain zones used for URL hosts | `[]string{"com", "net", "org", "en", "site"}` |
+| `Url.AllowedSchemes` | Schemes used for generated URLs | `[]string{"http", "https"}` |
+| `Url.PathLen` | Length of the generated URL path in runes | `3` |
+| `Time.YearsBack` | Number of calendar years before now included in the time range | `200` |
+| `Time.YearsForward` | Number of calendar years after now included in the time range | `200` |
 
 ## License
 
