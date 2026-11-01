@@ -34,38 +34,38 @@ This library focuses on that single use case: generating random values and popul
 package example_test
 
 import (
-	"testing"
+    "testing"
 
-	"github.com/koaim/faker"
+    "github.com/koaim/faker"
 )
 
 type User struct {
-	ID      int
-	Name    string
-	Email   string
-	IsAdmin bool
+    ID      int
+    Name    string
+    Email   string
+    IsAdmin bool
 }
 
 func TestUser(t *testing.T) {
-	// Generate a value using the default options.
-	u := faker.Make[User](t)
+    // Generate a value using the default options.
+    u := faker.Make[User](t)
 
-	// Apply overrides after generating the value.
-	u = faker.MakeWithOverrides(func(v *User) {
-		v.Email = "test@example.com"
-	})
+    // Apply overrides after generating the value.
+    u = faker.MakeWithOverrides(func(v *User) {
+        v.Email = "test@example.com"
+    })
 
-	// Apply functional options to the default options.
-	u = faker.Make[User](t,
-		faker.WithIgnoreFields("IsAdmin", "Email"),
-		faker.WithStrLen(8),
-		faker.WithAllowedRunes([]rune("abc123")),
-	)
+    // Apply functional options to the default options.
+    u = faker.Make[User](t,
+        faker.WithIgnoreFields("IsAdmin", "Email"),
+        faker.WithStrLen(8),
+        faker.WithAllowedRunes([]rune("abc123")),
+    )
 
-	// Override generation for an exact type, including nested fields.
-	u = faker.Make[User](t,
-		faker.WithBuilder(func() int { return 42 }),
-	)
+    // Override generation for an exact type, including nested fields.
+    u = faker.Make[User](t,
+        faker.WithBuilder(func() int { return 42 }),
+    )
 }
 ```
 ## Options
