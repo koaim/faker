@@ -1,6 +1,6 @@
 # faker
 
-[![Go version](https://img.shields.io/github/go-mod/go-version/koaim/faker/main)](https://github.com/koaim/faker/blob/main/go.mod)
+[![Go version](https://img.shields.io/github/go-mod/go-version/koaim/faker)](https://github.com/koaim/faker/blob/main/go.mod)
 [![GoDoc](https://godoc.org/github.com/koaim/faker?status.svg)](https://godoc.org/github.com/koaim/faker) [![license](http://img.shields.io/badge/license-MIT-green.svg?style=flat)](https://raw.githubusercontent.com/koaim/faker/main/LICENSE)
 [![codecov](https://codecov.io/gh/koaim/faker/branch/main/graph/badge.svg)](https://codecov.io/gh/koaim/faker)
 
