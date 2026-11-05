@@ -181,16 +181,46 @@ func fillSlice(rv reflect.Value, opt Option) {
 	}
 }
 
+func fillRecursiveField(rv reflect.Value, opt Option) {
+	var fillField func(reflect.Value, int)
+	fillField = func(rv reflect.Value, depth int) {
+		if depth == 0 {
+			rv.SetZero()
+			return
+		}
+
+		rv.Set(reflect.New(rv.Type().Elem()))
+
+		for i := 0; i < rv.Elem().NumField(); i++ {
+			field := rv.Elem().Field(i)
+			if !field.CanSet() || slices.Contains(opt.IgnoreFields, rv.Elem().Type().Field(i).Name) {
+				continue
+			}
+
+			if field.Kind() == reflect.Pointer && field.Type().Elem() == rv.Elem().Type() {
+				fillField(field, depth-1)
+			} else {
+				fill(field.Addr().Interface(), opt)
+			}
+		}
+	}
+
+	fillField(rv, opt.MaxRecursiveDepth-1)
+}
+
 func fillStruct(rv reflect.Value, opt Option) {
 	for i := 0; i < rv.NumField(); i++ {
 		field := rv.Field(i)
-		sf := rv.Type().Field(i)
 
-		if !field.CanSet() || slices.Contains(opt.IgnoreFields, sf.Name) {
+		if !field.CanSet() || slices.Contains(opt.IgnoreFields, rv.Type().Field(i).Name) {
 			continue
 		}
 
-		fill(field.Addr().Interface(), opt)
+		if field.Kind() == reflect.Pointer && field.Type().Elem() == rv.Type() {
+			fillRecursiveField(field, opt)
+		} else {
+			fill(field.Addr().Interface(), opt)
+		}
 	}
 }
 

@@ -22,6 +22,7 @@ const (
 	urlQueryCount   = 2
 	urlWithUserInfo = true
 	pathLen         = 3
+	maxDepth        = 3
 )
 
 var (
@@ -59,6 +60,8 @@ type Option struct {
 	// CustomFakers lists custom generators applied to values of the types
 	// they specify, overriding the default generation rules.
 	CustomFakers []Custom
+
+	MaxRecursiveDepth int
 
 	// Url is the setting for generating random URL values.
 	Url UrlOption
@@ -185,10 +188,11 @@ type TimeOption struct {
 // DefaultOption returns an Option with the default generation settings.
 func DefaultOption() Option {
 	return Option{
-		MinContainersLen: minContainersLen,
-		MaxContainersLen: maxContainersLen,
-		AllowedRunes:     slices.Clone(allowedRunes),
-		StrLen:           strLen,
+		MinContainersLen:  minContainersLen,
+		MaxContainersLen:  maxContainersLen,
+		AllowedRunes:      slices.Clone(allowedRunes),
+		StrLen:            strLen,
+		MaxRecursiveDepth: maxDepth,
 		Time: TimeOption{
 			YearsBack:    timeYearsBack,
 			YearsForward: timeYearsForward,
@@ -288,6 +292,12 @@ func WithTimeYearsBack(years int) OptionFunc {
 func WithTimeYearsForward(years int) OptionFunc {
 	return func(o *Option) {
 		o.Time.YearsForward = years
+	}
+}
+
+func WithRecursiveDepth(depth int) OptionFunc {
+	return func(o *Option) {
+		o.MaxRecursiveDepth = depth
 	}
 }
 

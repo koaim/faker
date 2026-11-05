@@ -367,6 +367,64 @@ func TestMake_Struct(t *testing.T) {
 	}
 }
 
+func TestMake_LinkedList(t *testing.T) {
+	t.Parallel()
+
+	const (
+		depth  = 3
+		intVal = 10
+	)
+
+	type Node struct {
+		Val  int
+		Next *Node
+	}
+
+	v := Make[Node](t,
+		WithRecursiveDepth(depth),
+		WithBuilder(func() int { return intVal }),
+	)
+
+	want := Node{
+		Val:  intVal,
+		Next: &Node{Val: intVal, Next: &Node{Val: intVal}},
+	}
+
+	if !reflect.DeepEqual(want, v) {
+		t.Fatalf("\nwant %+v\nhave %+v", want, v)
+	}
+}
+
+func TestMake_DoubleLinkedList(t *testing.T) {
+	t.Parallel()
+
+	const (
+		depth  = 3
+		intVal = 20
+	)
+
+	type Node struct {
+		Val  int
+		Next *Node
+		Prev *Node
+	}
+
+	v := Make[Node](t,
+		WithRecursiveDepth(depth),
+		WithBuilder(func() int { return intVal }),
+	)
+
+	want := Node{
+		Val:  intVal,
+		Next: &Node{Val: intVal, Next: &Node{Val: intVal}, Prev: &Node{Val: intVal}},
+		Prev: &Node{Val: intVal, Next: &Node{Val: intVal}, Prev: &Node{Val: intVal}},
+	}
+
+	if !reflect.DeepEqual(want, v) {
+		t.Fatalf("\nwant %+v\nhave %+v", want, v)
+	}
+}
+
 func TestMake_Struct_NotSupportedTypes(t *testing.T) {
 	t.Parallel()
 
