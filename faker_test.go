@@ -337,6 +337,21 @@ func TestMake_Error(t *testing.T) {
 	}
 }
 
+func TestMake_MapOfMaps(t *testing.T) {
+	t.Parallel()
+
+	v := Make[map[string]map[string]int](t)
+
+	if len(v) == 0 {
+		t.Fatal("expected non-empty map")
+	}
+	for _, m := range v {
+		if len(m) == 0 {
+			t.Fatal("expected non-empty map")
+		}
+	}
+}
+
 func TestMake_Struct(t *testing.T) {
 	t.Parallel()
 
@@ -395,7 +410,7 @@ func TestMake_LinkedList(t *testing.T) {
 	}
 }
 
-func TestMake_DoubleLinkedList(t *testing.T) {
+func TestMake_BinaryTree(t *testing.T) {
 	t.Parallel()
 
 	const (
@@ -404,9 +419,9 @@ func TestMake_DoubleLinkedList(t *testing.T) {
 	)
 
 	type Node struct {
-		Val  int
-		Next *Node
-		Prev *Node
+		Val   int
+		Left  *Node
+		Right *Node
 	}
 
 	v := Make[Node](t,
@@ -415,13 +430,59 @@ func TestMake_DoubleLinkedList(t *testing.T) {
 	)
 
 	want := Node{
-		Val:  intVal,
-		Next: &Node{Val: intVal, Next: &Node{Val: intVal}, Prev: &Node{Val: intVal}},
-		Prev: &Node{Val: intVal, Next: &Node{Val: intVal}, Prev: &Node{Val: intVal}},
+		Val:   intVal,
+		Left:  &Node{Val: intVal, Left: &Node{Val: intVal}, Right: &Node{Val: intVal}},
+		Right: &Node{Val: intVal, Left: &Node{Val: intVal}, Right: &Node{Val: intVal}},
 	}
 
 	if !reflect.DeepEqual(want, v) {
 		t.Fatalf("\nwant %+v\nhave %+v", want, v)
+	}
+}
+
+func TestMake_BinaryTree_IgnoreRight(t *testing.T) {
+	t.Parallel()
+
+	const (
+		depth  = 3
+		intVal = 20
+	)
+
+	type Node struct {
+		Val   int
+		Left  *Node
+		Right *Node
+	}
+
+	v := Make[Node](t,
+		WithRecursiveDepth(depth),
+		WithBuilder(func() int { return intVal }),
+		WithIgnoreFields("Right"),
+	)
+
+	want := Node{
+		Val:  intVal,
+		Left: &Node{Val: intVal, Left: &Node{Val: intVal}},
+	}
+
+	if !reflect.DeepEqual(want, v) {
+		t.Fatalf("\nwant %+v\nhave %+v", want, v)
+	}
+}
+
+func TestMake_BuilderConflicts(t *testing.T) {
+	t.Parallel()
+
+	type Int int
+
+	v := Make[[]Int](t,
+		WithBuilder(func() Int { return 42 }),
+		WithBuilder(func() []Int { return []Int{1, 2, 3} }),
+		WithBuilder(func() int { return 10 }),
+	)
+
+	if !reflect.DeepEqual(v, []Int{1, 2, 3}) {
+		t.Fatalf("\nwant %v\nhave %v", []Int{1, 2, 3}, v)
 	}
 }
 
