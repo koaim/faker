@@ -22,6 +22,7 @@ const (
 	urlQueryCount   = 2
 	urlWithUserInfo = true
 	pathLen         = 3
+	maxDepth        = 3
 )
 
 var (
@@ -59,6 +60,11 @@ type Option struct {
 	// CustomFakers lists custom generators applied to values of the types
 	// they specify, overriding the default generation rules.
 	CustomFakers []Custom
+	// MaxRecursiveDepth limits nesting through fields that refer to the
+	// enclosing struct's own type via pointers, slices, arrays, maps, or
+	// channels. The root counts as level 1; values beyond the limit remain
+	// zero.
+	MaxRecursiveDepth int
 
 	// Url is the setting for generating random URL values.
 	Url UrlOption
@@ -155,6 +161,10 @@ func (o Option) validationError() error {
 		}
 	}
 
+	if o.MaxRecursiveDepth < 1 {
+		errs = append(errs, fmt.Errorf("MaxRecursiveDeath must be >= 1"))
+	}
+
 	return errors.Join(errs...)
 }
 
@@ -185,10 +195,11 @@ type TimeOption struct {
 // DefaultOption returns an Option with the default generation settings.
 func DefaultOption() Option {
 	return Option{
-		MinContainersLen: minContainersLen,
-		MaxContainersLen: maxContainersLen,
-		AllowedRunes:     slices.Clone(allowedRunes),
-		StrLen:           strLen,
+		MinContainersLen:  minContainersLen,
+		MaxContainersLen:  maxContainersLen,
+		AllowedRunes:      slices.Clone(allowedRunes),
+		StrLen:            strLen,
+		MaxRecursiveDepth: maxDepth,
 		Time: TimeOption{
 			YearsBack:    timeYearsBack,
 			YearsForward: timeYearsForward,
@@ -241,16 +252,16 @@ func WithUrlUserInfo(val bool) OptionFunc {
 }
 
 // WithUrlQueryCount sets the number of query parameters to add to generated URLs.
-func WithUrlQueryCount(c int) OptionFunc {
+func WithUrlQueryCount(c uint) OptionFunc {
 	return func(o *Option) {
-		o.Url.QueryCount = c
+		o.Url.QueryCount = int(c)
 	}
 }
 
 // WithUrlPathLen sets the length of generated URL paths in runes.
-func WithUrlPathLen(l int) OptionFunc {
+func WithUrlPathLen(l uint) OptionFunc {
 	return func(o *Option) {
-		o.Url.PathLen = l
+		o.Url.PathLen = int(l)
 	}
 }
 
@@ -278,16 +289,25 @@ func WithCloseChannels() OptionFunc {
 }
 
 // WithTimeYearsBack sets the non-negative number of calendar years before now.
-func WithTimeYearsBack(years int) OptionFunc {
+func WithTimeYearsBack(years uint) OptionFunc {
 	return func(o *Option) {
-		o.Time.YearsBack = years
+		o.Time.YearsBack = int(years)
 	}
 }
 
 // WithTimeYearsForward sets the non-negative number of calendar years after now.
-func WithTimeYearsForward(years int) OptionFunc {
+func WithTimeYearsForward(years uint) OptionFunc {
 	return func(o *Option) {
-		o.Time.YearsForward = years
+		o.Time.YearsForward = int(years)
+	}
+}
+
+// WithRecursiveDepth sets the maximum depth for fields that recurse into the
+// enclosing struct's own type via pointers, slices, arrays, maps, or channels.
+// The root counts as level 1. depth must be at least 1.
+func WithRecursiveDepth(depth uint) OptionFunc {
+	return func(o *Option) {
+		o.MaxRecursiveDepth = int(depth)
 	}
 }
 
