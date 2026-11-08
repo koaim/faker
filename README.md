@@ -23,10 +23,9 @@ This library focuses on that single use case: generating random values and popul
 - Generic helpers for generating values and applying overrides
 - Supports built-in signed and unsigned integers (including `byte`, `rune`, and `uintptr`), floats, complex numbers, strings, and booleans
 - Recursively fills structs, slices, arrays, maps, buffered bidirectional channels, and pointers
+- Supports self-referential structs (such as trees and linked lists) with a configurable recursion depth
 - Special generators for `time.Time`, `uuid.UUID`, `url.URL`, `net.IP`, `net.IPNet`, `net.IPMask`, `net.HardwareAddr` and `error`
 - Custom generators matched by exact type
-
-**Warning:** Do not use this library with recursive types (such as trees, graphs, or linked lists). Generation has no recursion limit or cycle detection and can recurse indefinitely, causing a stack overflow.
 
 ## Usage
 
@@ -68,6 +67,53 @@ func TestUser(t *testing.T) {
     )
 }
 ```
+
+## Recursive types
+
+Direct self-references through struct pointer fields are supported. The root struct counts as depth 1, and pointers beyond `MaxRecursiveDepth` remain `nil`.
+
+For example, this generates a linked list with three nodes:
+
+```go
+type Node struct {
+    Value int
+    Next  *Node
+}
+
+node := faker.Make[Node](t) //ok
+```
+
+Trees with direct self-references work the same way:
+
+```go
+type TreeNode struct {
+    Value       int
+    Left, Right *TreeNode
+}
+
+tree := faker.Make[TreeNode](t) //ok
+```
+
+Only direct `*T` fields inside `T` respect `MaxRecursiveDepth`. Recursion hidden behind slices, maps, channels, arrays, additional pointers, or another type is not depth-limited. Such types can recurse indefinitely and cause a stack overflow:
+
+```go
+// Not supported: the self-reference is hidden behind a slice.
+type Node struct {
+    Children []*Node
+}
+
+// Not supported: the recursion passes through another type.
+type A struct {
+    B *B
+}
+
+type B struct {
+    A *A
+}
+```
+
+For these types, provide a custom generator with `WithBuilder` or skip the recursive fields with `WithIgnoreFields`.
+
 ## Options
 
 Default values returned by `DefaultOption()`:
@@ -81,6 +127,7 @@ Default values returned by `DefaultOption()`:
 | `IgnoreFields` | Names of struct fields to skip | `nil` |
 | `CloseChannels` | Whether to close generated channels after filling them | `false` |
 | `CustomFakers` | Custom generators matched by exact type, overriding default generation | `nil` |
+| `MaxRecursiveDepth` | Maximum depth of self-referential struct pointers, including the root struct; configure with `WithRecursiveDepth` | `3` |
 | `Url.QueryCount` | Number of query parameters to generate for URLs | `2` |
 | `Url.WithUserInfo` | Whether generated URLs include a username and password | `true` |
 | `Url.AllowedDomainZones` | Domain zones used for URL hosts | `[]string{"com", "net", "org", "en", "site"}` |
