@@ -17,7 +17,7 @@ jobs:
           cache: false
 
       - name: run tests with coverage
-        run: go test ./... -coverprofile=coverage.out -covermode=atomic
+        run: go test ./... -count=1000000 -coverprofile=coverage.out -covermode=atomic
 
       - name: upload coverage
         uses: codecov/codecov-action@v7
