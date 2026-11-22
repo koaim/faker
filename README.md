@@ -133,6 +133,12 @@ Default values returned by `DefaultOption()`:
 | `MinInt16Value` | Minimum generated `int16` value; configure with `WithMinInt16Value` | `1` |
 | `MinInt32Value` | Minimum generated `int32` value; configure with `WithMinInt32Value` | `1` |
 | `MinInt64Value` | Minimum generated `int64` value; configure with `WithMinInt64Value` | `1` |
+| `MinUintValue` | Minimum generated `uint` value; configure with `WithMinUintValue` | `1` |
+| `MinUint8Value` | Minimum generated `uint8` value; configure with `WithMinUint8Value` | `1` |
+| `MinUint16Value` | Minimum generated `uint16` value; configure with `WithMinUint16Value` | `1` |
+| `MinUint32Value` | Minimum generated `uint32` value; configure with `WithMinUint32Value` | `1` |
+| `MinUint64Value` | Minimum generated `uint64` value; configure with `WithMinUint64Value` | `1` |
+| `MinUintptrValue` | Minimum generated `uintptr` value; configure with `WithMinUintptrValue` | `1` |
 | `Url.QueryCount` | Number of query parameters to generate for URLs | `2` |
 | `Url.WithUserInfo` | Whether generated URLs include a username and password | `true` |
 | `Url.AllowedDomainZones` | Domain zones used for URL hosts | `[]string{"com", "net", "org", "en", "site"}` |

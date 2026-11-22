@@ -70,6 +70,12 @@ type Option struct {
 	MinInt16Value     int16
 	MinInt32Value     int32
 	MinInt64Value     int64
+	MinUintValue      uint
+	MinUint8Value     uint8
+	MinUint16Value    uint16
+	MinUint32Value    uint32
+	MinUint64Value    uint64
+	MinUintptrValue   uintptr
 
 	// Url is the setting for generating random URL values.
 	Url UrlOption
@@ -216,11 +222,17 @@ func DefaultOption() Option {
 			AllowedSchemes:     slices.Clone(allowedUrlSchemes),
 			PathLen:            pathLen,
 		},
-		MinIntValue:   minInt,
-		MinInt8Value:  minInt,
-		MinInt16Value: minInt,
-		MinInt32Value: minInt,
-		MinInt64Value: minInt,
+		MinIntValue:     minInt,
+		MinInt8Value:    minInt,
+		MinInt16Value:   minInt,
+		MinInt32Value:   minInt,
+		MinInt64Value:   minInt,
+		MinUintValue:    minInt,
+		MinUint8Value:   minInt,
+		MinUint16Value:  minInt,
+		MinUint32Value:  minInt,
+		MinUint64Value:  minInt,
+		MinUintptrValue: minInt,
 	}
 }
 
@@ -344,6 +356,48 @@ func WithMinInt32Value(min int32) OptionFunc {
 func WithMinInt64Value(min int64) OptionFunc {
 	return func(o *Option) {
 		o.MinInt64Value = min
+	}
+}
+
+// WithMinUintValue sets the minimum value for generated uint values.
+func WithMinUintValue(min uint) OptionFunc {
+	return func(o *Option) {
+		o.MinUintValue = min
+	}
+}
+
+// WithMinUint8Value sets the minimum value for generated uint8 values.
+func WithMinUint8Value(min uint8) OptionFunc {
+	return func(o *Option) {
+		o.MinUint8Value = min
+	}
+}
+
+// WithMinUint16Value sets the minimum value for generated uint16 values.
+func WithMinUint16Value(min uint16) OptionFunc {
+	return func(o *Option) {
+		o.MinUint16Value = min
+	}
+}
+
+// WithMinUint32Value sets the minimum value for generated uint32 values.
+func WithMinUint32Value(min uint32) OptionFunc {
+	return func(o *Option) {
+		o.MinUint32Value = min
+	}
+}
+
+// WithMinUint64Value sets the minimum value for generated uint64 values.
+func WithMinUint64Value(min uint64) OptionFunc {
+	return func(o *Option) {
+		o.MinUint64Value = min
+	}
+}
+
+// WithMinUintptrValue sets the minimum value for generated uintptr values.
+func WithMinUintptrValue(min uintptr) OptionFunc {
+	return func(o *Option) {
+		o.MinUintptrValue = min
 	}
 }
 

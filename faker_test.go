@@ -233,6 +233,60 @@ func TestMake_Uint(t *testing.T) {
 	}
 }
 
+func TestMake_Uint_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	v := Make[uint](t, WithMinUintValue(math.MaxUint-1))
+	if v < math.MaxUint-1 {
+		t.Fatal("expected value in [math.MaxUint - 1; math.MaxUint]")
+	}
+}
+
+func TestMake_Uint8_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	v := Make[uint8](t, WithMinUint8Value(math.MaxUint8-1))
+	if v < math.MaxUint8-1 {
+		t.Fatal("expected value in [math.MaxUint8 - 1; math.MaxUint8]")
+	}
+}
+
+func TestMake_Uint16_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	v := Make[uint16](t, WithMinUint16Value(math.MaxUint16-1))
+	if v < math.MaxUint16-1 {
+		t.Fatal("expected value in [math.MaxUint16 - 1; math.MaxUint16]")
+	}
+}
+
+func TestMake_Uint32_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	v := Make[uint32](t, WithMinUint32Value(math.MaxUint32-1))
+	if v < math.MaxUint32-1 {
+		t.Fatal("expected value in [math.MaxUint32 - 1; math.MaxUint32]")
+	}
+}
+
+func TestMake_Uint64_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	v := Make[uint64](t, WithMinUint64Value(math.MaxUint64-1))
+	if v < math.MaxUint64-1 {
+		t.Fatal("expected value in [math.MaxUint64 - 1; math.MaxUint64]")
+	}
+}
+
+func TestMake_Uintptr_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	v := Make[uintptr](t, WithMinUintptrValue(math.MaxUint-1))
+	if v < math.MaxUint-1 {
+		t.Fatal("expected value in [math.MaxUint - 1; math.MaxUint]")
+	}
+}
+
 func TestMake_Uintptr(t *testing.T) {
 	t.Parallel()
 

@@ -9,8 +9,13 @@ func randIn[T any](v ...T) T {
 	return v[randInd]
 }
 
-func randInRange[T int | int64](min, max T) T {
-	return min + T(rand.Int64N(int64(max-min+1)))
+func randInRange[T int | int64 | uint | uint64](min, max T) T {
+	n := uint64(max) - uint64(min) + 1
+	if n == 0 {
+		return T(rand.Uint64())
+	}
+
+	return min + T(rand.Uint64N(n))
 }
 
 func randStr(r []rune, length int) string {
