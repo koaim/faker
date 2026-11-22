@@ -2,6 +2,7 @@ package faker
 
 import (
 	"context"
+	"math"
 	"net"
 	"net/url"
 	"reflect"
@@ -94,6 +95,52 @@ func TestMake_Int(t *testing.T) {
 
 	if v == 0 {
 		t.Fatal("expected non-zero int")
+	}
+}
+
+func TestMake_Int_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	v := Make[int](t, WithMinIntValue(math.MaxInt-1))
+
+	if v < (math.MaxInt - 1) {
+		t.Fatal("expected value in [math.MaxInt - 1; math.MaxInt]")
+	}
+}
+
+func TestMake_Int8_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	v := Make[int8](t, WithMinInt8Value(math.MaxInt8-1))
+	if v < math.MaxInt8-1 {
+		t.Fatal("expected value in [math.MaxInt8 - 1; math.MaxInt8]")
+	}
+}
+
+func TestMake_Int16_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	v := Make[int16](t, WithMinInt16Value(math.MaxInt16-1))
+	if v < math.MaxInt16-1 {
+		t.Fatal("expected value in [math.MaxInt16 - 1; math.MaxInt16]")
+	}
+}
+
+func TestMake_Int32_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	v := Make[int32](t, WithMinInt32Value(math.MaxInt32-1))
+	if v < math.MaxInt32-1 {
+		t.Fatal("expected value in [math.MaxInt32 - 1; math.MaxInt32]")
+	}
+}
+
+func TestMake_Int64_WithOptions(t *testing.T) {
+	t.Parallel()
+
+	v := Make[int64](t, WithMinInt64Value(math.MaxInt64-1))
+	if v < math.MaxInt64-1 {
+		t.Fatal("expected value in [math.MaxInt64 - 1; math.MaxInt64]")
 	}
 }
 

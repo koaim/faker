@@ -128,6 +128,11 @@ Default values returned by `DefaultOption()`:
 | `CloseChannels` | Whether to close generated channels after filling them | `false` |
 | `CustomFakers` | Custom generators matched by exact type, overriding default generation | `nil` |
 | `MaxRecursiveDepth` | Maximum depth of self-referential struct pointers, including the root struct; configure with `WithRecursiveDepth` | `3` |
+| `MinIntValue` | Minimum generated `int` value; configure with `WithMinIntValue` | `1` |
+| `MinInt8Value` | Minimum generated `int8` value; configure with `WithMinInt8Value` | `1` |
+| `MinInt16Value` | Minimum generated `int16` value; configure with `WithMinInt16Value` | `1` |
+| `MinInt32Value` | Minimum generated `int32` value; configure with `WithMinInt32Value` | `1` |
+| `MinInt64Value` | Minimum generated `int64` value; configure with `WithMinInt64Value` | `1` |
 | `Url.QueryCount` | Number of query parameters to generate for URLs | `2` |
 | `Url.WithUserInfo` | Whether generated URLs include a username and password | `true` |
 | `Url.AllowedDomainZones` | Domain zones used for URL hosts | `[]string{"com", "net", "org", "en", "site"}` |

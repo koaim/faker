@@ -12,17 +12,17 @@ import (
 )
 
 const (
-	minContainersLen       = 1
-	maxContainersLen       = 3
-	strLen                 = 6
-	timeYearsBack          = 200
-	timeYearsForward       = 200
-	maxTimeYears     int64 = math.MaxInt64 / (366 * 24 * 60 * 60)
-
-	urlQueryCount   = 2
-	urlWithUserInfo = true
-	pathLen         = 3
-	maxDepth        = 3
+	minContainersLen = 1
+	maxContainersLen = 3
+	strLen           = 6
+	timeYearsBack    = 200
+	timeYearsForward = 200
+	urlQueryCount    = 2
+	urlWithUserInfo  = true
+	pathLen          = 3
+	maxDepth         = 3
+	minInt           = 1
+	maxTimeYears     = math.MaxInt64 / (366 * 24 * 60 * 60)
 )
 
 var (
@@ -65,6 +65,11 @@ type Option struct {
 	// channels. The root counts as level 1; values beyond the limit remain
 	// zero.
 	MaxRecursiveDepth int
+	MinIntValue       int64
+	MinInt8Value      int8
+	MinInt16Value     int16
+	MinInt32Value     int32
+	MinInt64Value     int64
 
 	// Url is the setting for generating random URL values.
 	Url UrlOption
@@ -211,6 +216,11 @@ func DefaultOption() Option {
 			AllowedSchemes:     slices.Clone(allowedUrlSchemes),
 			PathLen:            pathLen,
 		},
+		MinIntValue:   minInt,
+		MinInt8Value:  minInt,
+		MinInt16Value: minInt,
+		MinInt32Value: minInt,
+		MinInt64Value: minInt,
 	}
 }
 
@@ -299,6 +309,41 @@ func WithTimeYearsBack(years uint) OptionFunc {
 func WithTimeYearsForward(years uint) OptionFunc {
 	return func(o *Option) {
 		o.Time.YearsForward = int(years)
+	}
+}
+
+// WithMinIntValue sets the minimum value for generated int values.
+func WithMinIntValue(min int64) OptionFunc {
+	return func(o *Option) {
+		o.MinIntValue = min
+	}
+}
+
+// WithMinInt8Value sets the minimum value for generated int8 values.
+func WithMinInt8Value(min int8) OptionFunc {
+	return func(o *Option) {
+		o.MinInt8Value = min
+	}
+}
+
+// WithMinInt16Value sets the minimum value for generated int16 values.
+func WithMinInt16Value(min int16) OptionFunc {
+	return func(o *Option) {
+		o.MinInt16Value = min
+	}
+}
+
+// WithMinInt32Value sets the minimum value for generated int32 values.
+func WithMinInt32Value(min int32) OptionFunc {
+	return func(o *Option) {
+		o.MinInt32Value = min
+	}
+}
+
+// WithMinInt64Value sets the minimum value for generated int64 values.
+func WithMinInt64Value(min int64) OptionFunc {
+	return func(o *Option) {
+		o.MinInt64Value = min
 	}
 }
 

@@ -93,7 +93,7 @@ func fill(v any, opt Option) {
 	case reflect.TypeFor[string]():
 		fillString(rv, opt)
 	case reflect.TypeFor[int](), reflect.TypeFor[int8](), reflect.TypeFor[int16](), reflect.TypeFor[int32](), reflect.TypeFor[int64]():
-		fillInt(rv)
+		fillInt(rv, opt)
 	case reflect.TypeFor[uint](), reflect.TypeFor[uint8](), reflect.TypeFor[uint16](), reflect.TypeFor[uint32](), reflect.TypeFor[uint64](), reflect.TypeFor[uintptr]():
 		fillUint(rv)
 	case reflect.TypeFor[uuid.UUID]():
@@ -151,18 +151,18 @@ func fillUint(rv reflect.Value) {
 	}
 }
 
-func fillInt(rv reflect.Value) {
+func fillInt(rv reflect.Value, opt Option) {
 	switch rv.Kind() {
 	case reflect.Int8:
-		rv.SetInt(randInRange[int64](1, math.MaxInt8))
+		rv.SetInt(randInRange(int64(opt.MinInt8Value), math.MaxInt8))
 	case reflect.Int16:
-		rv.SetInt(randInRange[int64](1, math.MaxInt16))
+		rv.SetInt(randInRange(int64(opt.MinInt16Value), math.MaxInt16))
 	case reflect.Int32:
-		rv.SetInt(randInRange[int64](1, math.MaxInt32))
+		rv.SetInt(randInRange(int64(opt.MinInt32Value), math.MaxInt32))
 	case reflect.Int64:
-		rv.SetInt(randInRange[int64](1, math.MaxInt64))
+		rv.SetInt(randInRange(opt.MinInt64Value, math.MaxInt64))
 	case reflect.Int:
-		rv.SetInt(randInRange[int64](1, math.MaxInt))
+		rv.SetInt(randInRange(opt.MinIntValue, math.MaxInt))
 	}
 }
 
