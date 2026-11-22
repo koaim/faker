@@ -64,7 +64,7 @@ type Option struct {
 	// enclosing struct's own type via pointers, slices, arrays, maps, or
 	// channels. The root counts as level 1; values beyond the limit remain
 	// zero.
-	MaxRecursiveDepth int
+	MaxRecursiveDepth uint
 	MinIntValue       int64
 	MinInt8Value      int8
 	MinInt16Value     int16
@@ -174,6 +174,10 @@ func (o Option) validationError() error {
 
 	if o.MaxRecursiveDepth < 1 {
 		errs = append(errs, fmt.Errorf("MaxRecursiveDeath must be >= 1"))
+	}
+
+	if o.MinIntValue < math.MinInt {
+		errs = append(errs, fmt.Errorf("MinIntValue must be >= math.MinInt"))
 	}
 
 	return errors.Join(errs...)
@@ -406,7 +410,7 @@ func WithMinUintptrValue(min uintptr) OptionFunc {
 // The root counts as level 1. depth must be at least 1.
 func WithRecursiveDepth(depth uint) OptionFunc {
 	return func(o *Option) {
-		o.MaxRecursiveDepth = int(depth)
+		o.MaxRecursiveDepth = depth
 	}
 }
 

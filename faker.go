@@ -184,8 +184,8 @@ func fillSlice(rv reflect.Value, opt Option) {
 }
 
 func fillRecursiveField(rv reflect.Value, opt Option) {
-	var fillField func(reflect.Value, int)
-	fillField = func(rv reflect.Value, depth int) {
+	var fillField func(reflect.Value, uint)
+	fillField = func(rv reflect.Value, depth uint) {
 		if depth == 0 {
 			rv.SetZero()
 			return
