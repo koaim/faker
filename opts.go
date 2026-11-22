@@ -12,17 +12,17 @@ import (
 )
 
 const (
-	minContainersLen       = 1
-	maxContainersLen       = 3
-	strLen                 = 6
-	timeYearsBack          = 200
-	timeYearsForward       = 200
-	maxTimeYears     int64 = math.MaxInt64 / (366 * 24 * 60 * 60)
-
-	urlQueryCount   = 2
-	urlWithUserInfo = true
-	pathLen         = 3
-	maxDepth        = 3
+	minContainersLen = 1
+	maxContainersLen = 3
+	strLen           = 6
+	timeYearsBack    = 200
+	timeYearsForward = 200
+	urlQueryCount    = 2
+	urlWithUserInfo  = true
+	pathLen          = 3
+	maxDepth         = 3
+	minInt           = 1
+	maxTimeYears     = math.MaxInt64 / (366 * 24 * 60 * 60)
 )
 
 var (
@@ -64,7 +64,18 @@ type Option struct {
 	// enclosing struct's own type via pointers, slices, arrays, maps, or
 	// channels. The root counts as level 1; values beyond the limit remain
 	// zero.
-	MaxRecursiveDepth int
+	MaxRecursiveDepth uint
+	MinIntValue       int64
+	MinInt8Value      int8
+	MinInt16Value     int16
+	MinInt32Value     int32
+	MinInt64Value     int64
+	MinUintValue      uint
+	MinUint8Value     uint8
+	MinUint16Value    uint16
+	MinUint32Value    uint32
+	MinUint64Value    uint64
+	MinUintptrValue   uintptr
 
 	// Url is the setting for generating random URL values.
 	Url UrlOption
@@ -165,6 +176,10 @@ func (o Option) validationError() error {
 		errs = append(errs, fmt.Errorf("MaxRecursiveDeath must be >= 1"))
 	}
 
+	if o.MinIntValue < math.MinInt {
+		errs = append(errs, fmt.Errorf("MinIntValue must be >= math.MinInt"))
+	}
+
 	return errors.Join(errs...)
 }
 
@@ -211,6 +226,17 @@ func DefaultOption() Option {
 			AllowedSchemes:     slices.Clone(allowedUrlSchemes),
 			PathLen:            pathLen,
 		},
+		MinIntValue:     minInt,
+		MinInt8Value:    minInt,
+		MinInt16Value:   minInt,
+		MinInt32Value:   minInt,
+		MinInt64Value:   minInt,
+		MinUintValue:    minInt,
+		MinUint8Value:   minInt,
+		MinUint16Value:  minInt,
+		MinUint32Value:  minInt,
+		MinUint64Value:  minInt,
+		MinUintptrValue: minInt,
 	}
 }
 
@@ -302,12 +328,89 @@ func WithTimeYearsForward(years uint) OptionFunc {
 	}
 }
 
+// WithMinIntValue sets the minimum value for generated int values.
+func WithMinIntValue(min int64) OptionFunc {
+	return func(o *Option) {
+		o.MinIntValue = min
+	}
+}
+
+// WithMinInt8Value sets the minimum value for generated int8 values.
+func WithMinInt8Value(min int8) OptionFunc {
+	return func(o *Option) {
+		o.MinInt8Value = min
+	}
+}
+
+// WithMinInt16Value sets the minimum value for generated int16 values.
+func WithMinInt16Value(min int16) OptionFunc {
+	return func(o *Option) {
+		o.MinInt16Value = min
+	}
+}
+
+// WithMinInt32Value sets the minimum value for generated int32 values.
+func WithMinInt32Value(min int32) OptionFunc {
+	return func(o *Option) {
+		o.MinInt32Value = min
+	}
+}
+
+// WithMinInt64Value sets the minimum value for generated int64 values.
+func WithMinInt64Value(min int64) OptionFunc {
+	return func(o *Option) {
+		o.MinInt64Value = min
+	}
+}
+
+// WithMinUintValue sets the minimum value for generated uint values.
+func WithMinUintValue(min uint) OptionFunc {
+	return func(o *Option) {
+		o.MinUintValue = min
+	}
+}
+
+// WithMinUint8Value sets the minimum value for generated uint8 values.
+func WithMinUint8Value(min uint8) OptionFunc {
+	return func(o *Option) {
+		o.MinUint8Value = min
+	}
+}
+
+// WithMinUint16Value sets the minimum value for generated uint16 values.
+func WithMinUint16Value(min uint16) OptionFunc {
+	return func(o *Option) {
+		o.MinUint16Value = min
+	}
+}
+
+// WithMinUint32Value sets the minimum value for generated uint32 values.
+func WithMinUint32Value(min uint32) OptionFunc {
+	return func(o *Option) {
+		o.MinUint32Value = min
+	}
+}
+
+// WithMinUint64Value sets the minimum value for generated uint64 values.
+func WithMinUint64Value(min uint64) OptionFunc {
+	return func(o *Option) {
+		o.MinUint64Value = min
+	}
+}
+
+// WithMinUintptrValue sets the minimum value for generated uintptr values.
+func WithMinUintptrValue(min uintptr) OptionFunc {
+	return func(o *Option) {
+		o.MinUintptrValue = min
+	}
+}
+
 // WithRecursiveDepth sets the maximum depth for fields that recurse into the
 // enclosing struct's own type via pointers, slices, arrays, maps, or channels.
 // The root counts as level 1. depth must be at least 1.
 func WithRecursiveDepth(depth uint) OptionFunc {
 	return func(o *Option) {
-		o.MaxRecursiveDepth = int(depth)
+		o.MaxRecursiveDepth = depth
 	}
 }
 
