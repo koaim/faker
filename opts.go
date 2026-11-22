@@ -65,17 +65,28 @@ type Option struct {
 	// channels. The root counts as level 1; values beyond the limit remain
 	// zero.
 	MaxRecursiveDepth uint
-	MinIntValue       int64
-	MinInt8Value      int8
-	MinInt16Value     int16
-	MinInt32Value     int32
-	MinInt64Value     int64
-	MinUintValue      uint
-	MinUint8Value     uint8
-	MinUint16Value    uint16
-	MinUint32Value    uint32
-	MinUint64Value    uint64
-	MinUintptrValue   uintptr
+	// MinIntValue is the minimum value for generated int values.
+	MinIntValue int64
+	// MinInt8Value is the minimum value for generated int8 values.
+	MinInt8Value int8
+	// MinInt16Value is the minimum value for generated int16 values.
+	MinInt16Value int16
+	// MinInt32Value is the minimum value for generated int32 values.
+	MinInt32Value int32
+	// MinInt64Value is the minimum value for generated int64 values.
+	MinInt64Value int64
+	// MinUintValue is the minimum value for generated uint values.
+	MinUintValue uint
+	// MinUint8Value is the minimum value for generated uint8 values.
+	MinUint8Value uint8
+	// MinUint16Value is the minimum value for generated uint16 values.
+	MinUint16Value uint16
+	// MinUint32Value is the minimum value for generated uint32 values.
+	MinUint32Value uint32
+	// MinUint64Value is the minimum value for generated uint64 values.
+	MinUint64Value uint64
+	// MinUintptrValue is the minimum value for generated uintptr values.
+	MinUintptrValue uintptr
 
 	// Url is the setting for generating random URL values.
 	Url UrlOption
