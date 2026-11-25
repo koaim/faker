@@ -744,3 +744,25 @@ func TestMakeWithOption_IgnoreFields(t *testing.T) {
 		t.Fatalf("expected default Struct, got %+v", v)
 	}
 }
+
+func TestMake_Embedding(t *testing.T) {
+	t.Parallel()
+
+	type A struct {
+		ID int
+	}
+	type B struct {
+		A
+	}
+	type C struct {
+		B
+	}
+
+	defaultVal := C{}
+
+	v := Make[C](t)
+
+	if v == defaultVal {
+		t.Fatal("expected non-default value")
+	}
+}
