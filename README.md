@@ -46,22 +46,22 @@ type User struct {
 }
 
 func TestUser(t *testing.T) {
-    // Generate a value using the default options.
+    // generate a value using the default options
     u := faker.Make[User](t)
 
-    // Apply overrides after generating the value.
+    // apply overrides after generating the value
     u = faker.MakeWithOverrides(func(v *User) {
         v.Email = "test@example.com"
     })
 
-    // Apply functional options to the default options.
+    // apply functional options to the default options
     u = faker.Make[User](t,
         faker.WithIgnoreFields("IsAdmin", "Email"),
         faker.WithStrLen(8),
         faker.WithAllowedRunes([]rune("abc123")),
     )
 
-    // Override generation for an exact type, including nested fields.
+    // override generation for an exact type, including nested fields
     u = faker.Make[User](t,
         faker.WithBuilder(func() int { return 42 }),
     )
@@ -97,12 +97,12 @@ tree := faker.Make[TreeNode](t) //ok
 Only direct `*T` fields inside `T` respect `MaxRecursiveDepth`. Recursion hidden behind slices, maps, channels, arrays, additional pointers, or another type is not depth-limited. Such types can recurse indefinitely and cause a stack overflow:
 
 ```go
-// Not supported: the self-reference is hidden behind a slice.
+// not supported: the self-reference is hidden behind a slice
 type Node struct {
     Children []*Node
 }
 
-// Not supported: the recursion passes through another type.
+// not supported: the recursion passes through another type
 type A struct {
     B *B
 }
